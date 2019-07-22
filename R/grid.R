@@ -1,5 +1,13 @@
-
 add.grid <- function(fg.col='white', bg.col='ivory2', lwd.major=3, lwd.minor=1) {
+  # add.grid draws a filled background in the plot region and 
+  # lines for the major and minor ticks, in the style of ggplot2
+  # 
+  # Args:
+  #   fg.col: colour for lines in foreground
+  #   bg.col: colour for filled rectangle in background
+  #   lwd.major: line width for major tick mark lines
+  #   lwd.minor: line width for minor tick mark lines
+  
   u <- par('usr')  # get plot region dimensions
   x <- par('xaxp')
   y <- par('yaxp')
