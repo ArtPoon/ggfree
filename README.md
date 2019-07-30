@@ -37,7 +37,7 @@ add.grid()  # <-- a ggfree function!
 points(faithful$eruptions, faithful$waiting, pch=21, bg='white')
 ```
 
-<img src="man/figures/README-unnamed-chunk-3-1.png" width="100%" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-3-1.png" width="500px" style="display: block; margin: auto;" />
 
 We can also vary the colours, turn off major or minor gridlines, or skip vertical or horizontal lines:
 
@@ -49,7 +49,7 @@ add.grid(mode='x', bg.col='seashell2', lwd.minor=0)
 points(faithful$eruptions, faithful$waiting, pch=21, bg='white')
 ```
 
-<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-4-1.png" width="500px" style="display: block; margin: auto;" />
 
 ### Slopegraphs
 
