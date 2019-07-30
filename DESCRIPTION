@@ -9,3 +9,4 @@ Description: nogg is an R package that implements methods to generate plots in t
 License: GPL-3
 Encoding: UTF-8
 RoxygenNote: 6.1.1
+LazyData: true
