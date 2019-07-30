@@ -69,3 +69,37 @@ add.alpha <- function(col, alpha) {
     rgb(vals[1], vals[2], vals[3], alpha*255, maxColorValue=255)
   })
 }
+
+
+#' draw.arc
+#' 
+#' \code{draw.arc} draws an annular sector around origin (x,y)
+#' as a polygon
+#' 
+#' @examples 
+#' # create plot region
+#' par(mar=c(5,5,1,1))
+#' plot(NA, xlim=c(-1, 1), ylim=c(-1, 1))
+#' draw.arc(0, 0, 0.5, 0.8, 0.7*pi, 1.1*pi, col='steelblue')
+#' 
+#' @param x: x-coordinate of origin
+#' @param y: y-coordinate of origin
+#' @param r0: radius to inner arc
+#' @param r1: radius to outer arc
+#' @param theta0: start angle of arc
+#' @param theta1: end angle of arc
+#' @param border: colour for line around polygon border
+#' @param col: colour for polygon fill
+#' @param lty: line type parameter
+#' @param n: number of points to interpolate curves
+draw.arc <- function(x, y, r0, r1, theta0, theta1, border=NULL, 
+                     col=NA, lty=par('lty'), n=64) {
+  z <- seq(theta0, theta1, length.out=n)
+  polygon(
+    x=c(x+r0*cos(z), x+r1*cos(theta1), x+r1*cos(rev(z))), 
+    y=c(y+r0*sin(z), y+r1*sin(theta1), x+r1*sin(rev(z))),
+    border=border, col=col
+    )
+}
+
+
