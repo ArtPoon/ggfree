@@ -1,58 +1,97 @@
 #' slopegraph
 #' 
 #' \code{slopegraph} displays paired sample data as two sets of points connected 
-#' by line segments as a visualization of overall trends.
+#' by line segments as a visualization of overall trends.  See also @leeper/slopegraph
+#' at GitHub.
 #' 
 #' @examples 
-#' slopegraph(iris$Sepal.Width, iris$Petal.Length, colorize=T, add.grid=T, 
-#' pch=21, bg='white')
+#' # CO2 emissions data
+#' co2.emissions
+#' 
+#' # with default settings
+#' slopegraph(co2.emissions)
+#' 
+#' # annotate slopes with colour
+#' slopegraph(co2.emissions, names.arg=c(2000, 2010), 
+#' ylab=expression(text=paste('CO'^2, ' emissions (metric tons) per capita')), 
+#' type='b', cex.lab=1.2, colorize=T)
+#' 
+#' # more in style of Edward Tufte
+#' slopegraph(co2.emissions, names.arg=c(2000, 2010), type='t')
+#' title(expression(text=paste('CO'^2, ' emissions (metric tons) per capita')), 
+#' family='Palatino')
 #' 
 #' @param x: numeric vector of values to plot on the left
 #' @param y: numeric vector of values to plot on the right
-#' @param groups: optional names for labeling the x-axis
-#' @param labels: character vector of labels to annotate slopes
+#' @param type: 'b' displays both points and lines; 'l' displays lines only.
+#'              't' replaces points with numeric values, as per Tufte.
+#' @param names.arg: optional names for labeling the x-axis
 #' @param xlab: label for x-axis, as in generic \code{plot()}. Defaults to 'Groups'.
 #' @param ylab: label for y-axis, as in generic \code{plot()}. Defaults to \code{NA}.
-#' @param type: 'b' displays both points and lines; 'l' displays lines only.
+#' @param cex.lab: character expansion for labels
 #' @param colorize: use line colours to emphasize slope
 #' @param pal: vector of two colours for annotating slopes down and up, respectively.
 #' @param shim: width of horizontal padding to left and right of plot
-#' @param add.grid: if TRUE, calls the function \code{ggfree::add.grid}
-#' @param grid.args: list of optional arguments for \code{add.grid()}
+#' @param cex.text: character expansion for text
 #' @param ...: additional arguments to pass to \code{lines()}, *e.g.*, \code{lwd}
 #' 
 #' @export
-slopegraph <- function(x, y, names=NA, labels=NA, xlab='Groups', ylab=NA, type='b', 
-                       colorize=F, pal=c('firebrick', 'steelblue'), shim=0.2, 
-                       cex.labels=0.8, add.grid=F, grid.args=list(), ...) {
+slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA, cex.lab=1, 
+                       colorize=F, pal=c('firebrick', 'steelblue'), shim=0.5, 
+                       cex.text=0.8, ...) {
+  # check if 'x' holds a matrix or dataframe
+  if (is.na(y)) {
+    if (is.element(class(x), c('data.frame', 'matrix')) && ncol(x)==2) {
+      if (all(is.na(names.arg))) {
+        names.arg <- names(x)
+      }
+      y <- x[,2]
+      names(y) <- row.names(x)
+      x <- x[,1]
+      names(x) <- names(y)
+    } else {
+      stop("x must be a data frame or matrix of 2 columns")
+    }
+  }
+  
+  # check other inputs
   if (length(x) != length(y)) {
     stop("x and y must be of equal lengths")
   }
-  if (!is.na(names) && (length(names) != 2)) {
+  if (!is.na(names.arg) && (length(names.arg) != 2)) {
     stop("names must be character vector of length 2")
-  }
-  if (!is.na(labels) && (length(labels) != length(x))) {
-    stop("labels and x must be of equal lengths")
   }
   if (!is.numeric(x) || !is.numeric(y)) {
     stop ("x and y must be numeric vectors")
   }
   
-  plot(NA, xlim=c(1-shim, 2+shim), ylim=range(c(x, y)), 
-       xaxt='n', xlab=xlab, ylab=ylab)
+  # prepare plot region
+  par(mar=c(5,5,2,5))
+  plot(NA, xlim=c(ifelse(type=='t', 1-shim, 0.9), 2+shim), 
+       ylim=range(c(x, y)), 
+       xaxt='n', yaxt=ifelse(type=='t', 'n', 's'), bty='n', 
+       xlab=xlab, ylab=ylab, cex.lab=cex.lab)
   
-  axis(side=1, at=c(1,2), labels=names)
+  axis(side=1, at=c(1,2), labels=names.arg)
   
-  if (add.grid) {
-    do.call('add.grid', c(list(mode='x'), grid.args))  # draw background and gridlines
+  # labels for slopes
+  if (!is.null(names(x))) {
+    par(xpd=NA)
+    if (type=='t') {
+      text(x=rep(0.95, times=length(y)), y=x, pos=2, labels=names(x), cex=cex.text)
+    }
+    text(x=rep(2.05, times=length(y)), y=y, pos=4, labels=names(x), cex=cex.text)
+    par(xpd=FALSE)
   }
   
-  if ((length(labels) > 1) && !is.na(labels))
-    text(x=rep(2, times=length(y)), y=y, pos=4, labels=labels, cex=cex.labels)
-  
+  # draw slopes
   . <- apply(cbind(x, y), 1, function(r) {
-    lines(x=c(1,2), y=r, type=type, 
-          col=ifelse(colorize, ifelse(diff(r)>0, pal[1], pal[2]), 'black'),
-          ...)
+    col <- ifelse(colorize, ifelse(diff(r)>0, pal[1], pal[2]), 'black')
+    if (type=='t') {
+      lines(x=c(1,2), y=r, type='b', cex=0, col=col, ...)
+      text(x=c(1,2), y=r, labels = r, col=col, cex=cex.text)
+    } else{
+      lines(x=c(1,2), y=r, type=type, col=col, ...)
+    }
   })
 }
