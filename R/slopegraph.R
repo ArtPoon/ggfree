@@ -13,12 +13,12 @@
 #' 
 #' # annotate slopes with colour
 #' slopegraph(co2.emissions, names.arg=c(2000, 2010), 
-#' ylab=expression(text=paste('CO'^2, ' emissions (metric tons) per capita')), 
+#' ylab=expression(text=paste('CO'[2], ' emissions (metric tons) per capita')), 
 #' type='b', cex.lab=1.2, colorize=T)
 #' 
 #' # more in style of Edward Tufte
 #' slopegraph(co2.emissions, names.arg=c(2000, 2010), type='t')
-#' title(expression(text=paste('CO'^2, ' emissions (metric tons) per capita')), 
+#' title(expression(text=paste('CO'[2], ' emissions (metric tons) per capita')), 
 #' family='Palatino')
 #' 
 #' @param x: numeric vector of values to plot on the left
@@ -28,15 +28,14 @@
 #' @param names.arg: optional names for labeling the x-axis
 #' @param xlab: label for x-axis, as in generic \code{plot()}. Defaults to 'Groups'.
 #' @param ylab: label for y-axis, as in generic \code{plot()}. Defaults to \code{NA}.
-#' @param cex.lab: character expansion for labels
 #' @param colorize: use line colours to emphasize slope
 #' @param pal: vector of two colours for annotating slopes down and up, respectively.
 #' @param shim: width of horizontal padding to left and right of plot
 #' @param cex.text: character expansion for text
-#' @param ...: additional arguments to pass to \code{lines()}, *e.g.*, \code{lwd}
+#' @param ...: additional arguments to pass to \code{plot()}
 #' 
 #' @export
-slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA, cex.lab=1, 
+slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA,
                        colorize=F, pal=c('firebrick', 'steelblue'), shim=0.5, 
                        cex.text=0.8, ...) {
   # check if 'x' holds a matrix or dataframe
@@ -70,7 +69,7 @@ slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA, cex.la
   plot(NA, xlim=c(ifelse(type=='t', 1-shim, 0.9), 2+shim), 
        ylim=range(c(x, y)), 
        xaxt='n', yaxt=ifelse(type=='t', 'n', 's'), bty='n', 
-       xlab=xlab, ylab=ylab, cex.lab=cex.lab)
+       xlab=xlab, ylab=ylab, ...)
   
   axis(side=1, at=c(1,2), labels=names.arg)
   

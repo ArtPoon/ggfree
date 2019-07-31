@@ -72,5 +72,33 @@ points(faithful$eruptions, faithful$waiting, pch=21, bg='white')
 
 ### Slopegraphs
 
-A slopegraph is a method for visually comparing a paired set of observations.
+In general, a slopegraph is a method for visually comparing a paired set of observations.
+To illustrate the use of slopegraphs, I've adapted a carbon dioxide emissions data set similar to the one used by @clauswilke to demonstrate slopegraphs in *Fundamentals of Data Visualization*.
+This data sets is packaged with `ggfree`:
+```{r}
+require(ggfree)
+co2.emissions
+```
+
+There are two styles of slopegraphs that are implemented in `ggfree`.
+For the first style (where the argument `type` is left at its default value `'b'`), a vertical axis provides reference for the numerical values:
+```{r}
+slopegraph(co2.emissions, colorize=T)
+```
+Setting `colorize` to `TRUE` causes the line segments to be coloured to emphasize positive and negative slopes.
+
+For the second style (setting `type='t'`), we substitute the raw numerical values for data points, which makes the vertical axis unnecessary:
+```{r}
+par(family='Palatino')  # use a fancier font
+
+# the actual code here
+slopegraph(co2.emissions, type='t', cex.text=0.6, names.arg=c(2000, 2010))
+
+# make a nice title
+title(expression(text=paste('CO'[2], ' emissions (metric tons) per capita')), 
+      cex=0.8)
+```
+
+
+### Ringplots
 

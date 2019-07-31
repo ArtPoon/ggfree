@@ -4,25 +4,23 @@
 \alias{slopegraph}
 \title{slopegraph}
 \usage{
-slopegraph(x, y, names = NA, labels = NA, xlab = "Groups",
-  ylab = NA, type = "b", colorize = F, pal = c("firebrick",
-  "steelblue"), shim = 0.2, cex.labels = 0.8, add.grid = F,
-  grid.args = list(), ...)
+slopegraph(x, y = NA, type = "b", names.arg = NA, xlab = NA,
+  ylab = NA, colorize = F, pal = c("firebrick", "steelblue"),
+  shim = 0.5, cex.text = 0.8, ...)
 }
 \arguments{
 \item{x:}{numeric vector of values to plot on the left}
 
 \item{y:}{numeric vector of values to plot on the right}
 
-\item{groups:}{optional names for labeling the x-axis}
+\item{type:}{'b' displays both points and lines; 'l' displays lines only.
+'t' replaces points with numeric values, as per Tufte.}
 
-\item{labels:}{character vector of labels to annotate slopes}
+\item{names.arg:}{optional names for labeling the x-axis}
 
 \item{xlab:}{label for x-axis, as in generic \code{plot()}. Defaults to 'Groups'.}
 
 \item{ylab:}{label for y-axis, as in generic \code{plot()}. Defaults to \code{NA}.}
-
-\item{type:}{'b' displays both points and lines; 'l' displays lines only.}
 
 \item{colorize:}{use line colours to emphasize slope}
 
@@ -30,18 +28,30 @@ slopegraph(x, y, names = NA, labels = NA, xlab = "Groups",
 
 \item{shim:}{width of horizontal padding to left and right of plot}
 
-\item{add.grid:}{if TRUE, calls the function \code{ggfree::add.grid}}
+\item{cex.text:}{character expansion for text}
 
-\item{grid.args:}{list of optional arguments for \code{add.grid()}}
-
-\item{...:}{additional arguments to pass to \code{lines()}, *e.g.*, \code{lwd}}
+\item{...:}{additional arguments to pass to \code{plot()}}
 }
 \description{
 \code{slopegraph} displays paired sample data as two sets of points connected 
-by line segments as a visualization of overall trends.
+by line segments as a visualization of overall trends.  See also @leeper/slopegraph
+at GitHub.
 }
 \examples{
-slopegraph(iris$Sepal.Width, iris$Petal.Length, colorize=T, add.grid=T, 
-pch=21, bg='white')
+# CO2 emissions data
+co2.emissions
+
+# with default settings
+slopegraph(co2.emissions)
+
+# annotate slopes with colour
+slopegraph(co2.emissions, names.arg=c(2000, 2010), 
+ylab=expression(text=paste('CO'[2], ' emissions (metric tons) per capita')), 
+type='b', cex.lab=1.2, colorize=T)
+
+# more in style of Edward Tufte
+slopegraph(co2.emissions, names.arg=c(2000, 2010), type='t')
+title(expression(text=paste('CO'[2], ' emissions (metric tons) per capita')), 
+family='Palatino')
 
 }

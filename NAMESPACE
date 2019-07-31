@@ -3,4 +3,5 @@
 export(add.alpha)
 export(add.grid)
 export(ridgeplot)
+export(ringplot)
 export(slopegraph)
