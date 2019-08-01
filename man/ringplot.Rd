@@ -50,6 +50,6 @@ ringplot(c(6,8,10,9,7), x=0, y=0, r0=0.7, r1=0.9, theta=0.2,
 col=rainbow(5, s=0.25))
 
 # labeled ringplot
-ringplot(VADeaths[,1], r0=0.5, r1=0.8, use.names=T, offset=100)
+ringplot(VADeaths[,1], r0=0.3, r1=0.7, use.names=T, offset=0.05, srt=90, cex.label=1)
 
 }

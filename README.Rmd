@@ -102,3 +102,12 @@ title(expression(text=paste('CO'[2], ' emissions (metric tons) per capita')),
 
 ### Ringplots
 
+A ring- or donut-plot is simply a piechart with a hole in it.
+Piecharts have been criticized for being potentially misleading because the quantity represented by a given sector ("pie slice") is proportional to its arc (pie crust) length, and not the total area, and because it is difficult to compare two sectors by eye.
+
+
+### Ridgeplots
+
+
+
+
