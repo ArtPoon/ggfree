@@ -14,7 +14,7 @@
 #' col=rainbow(5, s=0.25))
 #' 
 #' # labeled ringplot
-#' ringplot(VADeaths[,1], r0=0.5, r1=0.8, use.names=T, offset=100)
+#' ringplot(VADeaths[,1], r0=0.3, r1=0.7, use.names=T, offset=0.05, srt=90, cex.label=1)
 #' 
 #' @param vec: a numeric vector containing data for plotting
 #' @param r0: radius to inner edge of ring.  If set to 0, ringplot
