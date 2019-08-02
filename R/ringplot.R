@@ -28,8 +28,9 @@ draw.arc <- function(x, y, theta0, theta1, r0, r1=NA, n=64, ...) {
     lines(x+r0*cos(z), y+r0*sin(z), ...)
   } else {
     polygon(
-      x=c(x+r0*cos(z), x+r1*cos(theta1), x+r1*cos(rev(z))), 
-      y=c(y+r0*sin(z), y+r1*sin(theta1), x+r1*sin(rev(z))), ...
+      x=x+c(r0*cos(z), r1*cos(theta1), r1*cos(rev(z)), r0*cos(theta0)), 
+      y=y+c(r0*sin(z), r1*sin(theta1), r1*sin(rev(z)), r0*sin(theta0)), 
+      ...
     ) 
   }
 }
@@ -131,14 +132,20 @@ sunburst <- function(x) {
 #' 
 #' @examples
 #' require(RColorBrewer)
-#' require(HistData)
 #' pal <- brewer.pal(3, 'Pastel2')
-#' ng <- subset(Nightingale, Year==1855, c('Other.rate', 'Wounds.rate', 'Disease.rate'))
+#' 
+#' # load the Florence Nightingale data set
+#' require(HistData)
+#' ng <- subset(Nightingale, Year==1855, c('Wounds.rate', 'Other.rate', 'Disease.rate'))
 #' row.names(ng) <- Nightingale$Month[Nightingale$Year==1855]
+#' 
 #' par(mar=rep(0,4))
-#' polarplot(as.matrix(ng), decay=1, theta=1.1*pi, col=pal)
+#' polarplot(as.matrix(ng), x=0.2, y=0.3, decay=1, theta=1.1*pi, col=pal, 
+#' use.names=T)
 #' title('Causes of mortality in British army, Crimean War (1855)', 
-#'       font.main=1, family='Garamond', line=-2, cex.main=1.1)
+#'       font.main=1, family='Palatino', line=-3)
+#' legend(x=-0.8, y=0.6, legend=c('Wounds', 'Other', 'Disease'), bty='n', 
+#'        fill=pal, cex=0.9)
 #' 
 #' @param obj: a numeric vector, matrix or table of frequency data
 #' @param r: radius for inner circle, defaults to 0
@@ -147,10 +154,15 @@ sunburst <- function(x) {
 #'               origin - 'decay' is a factor between 0 and 1 that progressively
 #'               reduces the arc length of wedges.  Defaults to 1 (no decay).
 #' @param col: a vector of colour strings
+#' @param use.names: if 'obj' is a named vector or matrix with row names, 
+#'                   use these to label the outer edge of each sector.
+#' @param pad.names: extra distance from origin for labels (default 0.05)
+#' @param cex.names: character expansion factor for labels (default 0.8)
 #' @param ...: additional arguments passed to the \code{plot} function.
 #'  
 #' @export
-polarplot <- function(obj, r=0, theta=0.5*pi, decay=0.8, col=NA, ...) {
+polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, decay=0.8, col=NA, 
+                      use.names=FALSE, pad.names=0.05, cex.names=0.8, ...) {
   if (!is.numeric(obj)) {
     stop("obj must be a numeric vector or matrix, or a table")
   }
@@ -159,13 +171,14 @@ polarplot <- function(obj, r=0, theta=0.5*pi, decay=0.8, col=NA, ...) {
   }
   obj <- obj/sum(obj)
   
-  n.sect <- nrow(obj)
-  n.lev <- ncol(obj)
+  n.sect <- nrow(obj)  # number of sectors
+  n.lev <- ncol(obj)  # number of levels (layers)
   
   # create new plot region
   plot(NA, xlim=c(-1, 1), ylim=c(-1, 1), 
        bty='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, ...)
   
+  # angles of sector boundaries
   h <- seq(0, 2*pi, length.out=n.sect+1) + theta
   
   if (any(is.na(col))) {
@@ -188,6 +201,20 @@ polarplot <- function(obj, r=0, theta=0.5*pi, decay=0.8, col=NA, ...) {
     }
     # update r0
     r0 <- r1
+  }
+  # r0 now contains radii of outer layers
+  
+  if (use.names) {
+    if (is.vector(obj)) {
+      labels <- names(obj)
+    } else {
+      labels <- row.names(obj)
+    }
+    h.mids <- (h+dh0/2)[1:n.sect]
+    . <- Map(text, labels, 
+             x = x+(r0+pad.names)*cos(h.mids), 
+             y = y+(r0+pad.names)*sin(h.mids), 
+             adj=0.5, srt=h.mids/(2*pi)*360-90, cex=cex.names)
   }
 }
 
