@@ -3,6 +3,7 @@
 export(add.alpha)
 export(add.grid)
 export(draw.arc)
+export(polarplot)
 export(ridgeplot)
 export(ringplot)
 export(slopegraph)

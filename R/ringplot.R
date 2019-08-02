@@ -49,6 +49,7 @@ draw.arc <- function(x, y, theta0, theta1, r0, r1=NA, n=64, ...) {
 #' ringplot(c(1,3,2,4), r0=0.5, r1=0.7)
 #' ringplot(c(6,8,10,9,7), x=0, y=0, r0=0.7, r1=0.9, theta=0.2, 
 #' col=rainbow(5, s=0.25))
+#' text(x=0, y=0, adj=0.5, label='0')
 #' 
 #' # labeled ringplot
 #' ringplot(VADeaths[,1], r0=0.3, r1=0.7, use.names=T, offset=0.05, srt=90, cex.label=1)
@@ -124,9 +125,31 @@ sunburst <- function(x) {
 
 #' polarplot
 #' 
-#' A circular plot where the circle is partitioned by radii at equal angles
-#' and the areas of the resulting sectors are proportional to the data.
-#' TODO: make stacked polarplot
+#' A polar area diagram is a circular plot where the circle is partitioned by 
+#' radii at equal angles, and the areas of the resulting sections are rescaled in 
+#' proportion to the respective frequencies.  The origin of the polar
+#' 
+#' @examples
+#' require(RColorBrewer)
+#' require(HistData)
+#' pal <- brewer.pal(3, 'Pastel2')
+#' ng <- subset(Nightingale, Year==1855, c('Other.rate', 'Wounds.rate', 'Disease.rate'))
+#' row.names(ng) <- Nightingale$Month[Nightingale$Year==1855]
+#' par(mar=rep(0,4))
+#' polarplot(as.matrix(ng), decay=1, theta=1.1*pi, col=pal)
+#' title('Causes of mortality in British army, Crimean War (1855)', 
+#'       font.main=1, family='Garamond', line=-2, cex.main=1.1)
+#' 
+#' @param obj: a numeric vector, matrix or table of frequency data
+#' @param r: radius for inner circle, defaults to 0
+#' @param theta: rotation offset for plot in radians, defaults to pi/2
+#' @param decay: wedges become "squished" with increasing distance from the
+#'               origin - 'decay' is a factor between 0 and 1 that progressively
+#'               reduces the arc length of wedges.  Defaults to 1 (no decay).
+#' @param col: a vector of colour strings
+#' @param ...: additional arguments passed to the \code{plot} function.
+#'  
+#' @export
 polarplot <- function(obj, r=0, theta=0.5*pi, decay=0.8, col=NA, ...) {
   if (!is.numeric(obj)) {
     stop("obj must be a numeric vector or matrix, or a table")
@@ -161,19 +184,13 @@ polarplot <- function(obj, r=0, theta=0.5*pi, decay=0.8, col=NA, ...) {
     dh <- decay^(i-1)*dh0  # change in arc length
     r1 <- sqrt(r0*r0 + 2*obj[,i]/dh)
     for (j in 1:n.sect) {
-      draw.arc(0, 0, theta0=h[j], theta1=h[j]+dh, r0=r0[j], r1=r1[j], col=pal[i])
+      draw.arc(x, y, theta0=h[j], theta1=h[j]+dh, r0=r0[j], r1=r1[j], col=pal[i])
     }
     # update r0
     r0 <- r1
   }
 }
 
-require(RColorBrewer)
-require(HistData)
-pal <- brewer.pal(3, 'Pastel2')
-ng <- subset(Nightingale, Year==1855, c('Other.rate', 'Wounds.rate', 'Disease.rate'))
-par(mar=c(1,1,1,1))
-polarplot(as.matrix(ng), decay=1, theta=0.1, col=pal)
-title('Causes of mortality', font.main=1, family='Garamond')
+
 
 
