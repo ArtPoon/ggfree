@@ -103,7 +103,14 @@ title(expression(text=paste('CO'[2], ' emissions (metric tons) per capita')),
 ### Ringplots
 
 A ring- or donut-plot is simply a piechart with a hole in it.
-Piecharts have been criticized for being potentially misleading because the quantity represented by a given sector ("pie slice") is proportional to its arc (pie crust) length, and not the total area, and because it is difficult to compare two sectors by eye.
+Piecharts have been criticized for being potentially misleading because it is difficult to compare the areas of two different sectors by eye.
+However, they are intuitive and compact visual devices, and multiple plots can be drawn in varying sizes to encode additional information, such as sample size. 
+The additional advantages of ringplots is that information can be embedded in the middle of the plot as text, and multiple ringplots can be nested within each other to display hierarchical frequency data (these are sometimes known as "sunburst" plots). 
+
+
+
+### Polar area charts
+
 
 
 ### Ridgeplots

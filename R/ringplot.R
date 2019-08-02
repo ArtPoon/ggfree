@@ -146,13 +146,15 @@ sunburst <- function(x) {
 #'       font.main=1, family='Palatino', line=-3)
 #' legend(x=-0.8, y=0.6, legend=c('Wounds', 'Other', 'Disease'), bty='n', 
 #'        fill=pal, cex=0.9)
+#'        
+#' # generate a wind rose (https://en.wikipedia.org/wiki/Wind_rose)
+#' 
 #' 
 #' @param obj: a numeric vector, matrix or table of frequency data
 #' @param r: radius for inner circle, defaults to 0
 #' @param theta: rotation offset for plot in radians, defaults to pi/2
-#' @param decay: wedges become "squished" with increasing distance from the
-#'               origin - 'decay' is a factor between 0 and 1 that progressively
-#'               reduces the arc length of wedges.  Defaults to 1 (no decay).
+#' @param space: a numeric vector on interval [0,1).  Values are reused as
+#'               necessary.  Defaults to 0.
 #' @param col: a vector of colour strings
 #' @param use.names: if 'obj' is a named vector or matrix with row names, 
 #'                   use these to label the outer edge of each sector.
@@ -161,7 +163,7 @@ sunburst <- function(x) {
 #' @param ...: additional arguments passed to the \code{plot} function.
 #'  
 #' @export
-polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, decay=0.8, col=NA, 
+polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, space=0, col=NA, 
                       use.names=FALSE, pad.names=0.05, cex.names=0.8, ...) {
   if (!is.numeric(obj)) {
     stop("obj must be a numeric vector or matrix, or a table")
@@ -173,6 +175,7 @@ polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, decay=0.8, col=NA,
   
   n.sect <- nrow(obj)  # number of sectors
   n.lev <- ncol(obj)  # number of levels (layers)
+  space <- rep(space, length.out=n.lev)
   
   # create new plot region
   plot(NA, xlim=c(-1, 1), ylim=c(-1, 1), 
@@ -194,8 +197,8 @@ polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, decay=0.8, col=NA,
   r0 <- rep(r, n.sect)
   
   for (i in 1:n.lev) {
-    dh <- decay^(i-1)*dh0  # change in arc length
-    r1 <- sqrt(r0*r0 + 2*obj[,i]/dh)
+    dh <- dh0 - space[i]  # change in arc length
+    r1 <- sqrt(r0*r0 + 2*obj[,i]/dh0)
     for (j in 1:n.sect) {
       draw.arc(x, y, theta0=h[j], theta1=h[j]+dh, r0=r0[j], r1=r1[j], col=pal[i])
     }
@@ -204,6 +207,7 @@ polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, decay=0.8, col=NA,
   }
   # r0 now contains radii of outer layers
   
+  # optionally label sections
   if (use.names) {
     if (is.vector(obj)) {
       labels <- names(obj)
