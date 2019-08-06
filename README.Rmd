@@ -134,7 +134,6 @@ Instead, the frequencies of the respective levels are visualized by scaling the 
 
 To illustrate, we're going to reproduce the classic plot by [Florence Nightingale](https://en.wikipedia.org/wiki/Pie_chart#Polar_area_diagram):
 ```{r fig.width=5, fig.height=5, out.width=500}
-require(RColorBrewer)
 pal <- brewer.pal(3, 'Pastel2')
 
 # load the Florence Nightingale data set (note, need to install HistData)
@@ -161,5 +160,11 @@ Ridgeplots are basically stacked [kernel densities](https://en.wikipedia.org/wik
 Displacing each density curve a small amount along the vertical axis can make it easier to distinguish one curve from another.
 The end result can also resemble a topographical map, which is likely the etymology of the name for this type of plot.
 
-
+In this example, we're going to make use of the `add.alpha` function in `ggfree:common` that adds transparency to colour specifications in R:
+```{r}
+par(mar=c(5,5,1,1))
+pal <- add.alpha(brewer.pal(3, 'Set1'), 0.5)
+ridgeplot(split(iris$Sepal.Length, iris$Species), step=0.4, col='white', 
+fill=pal, lwd=2, xlab='Sepal length', cex.lab=1.2)
+```
 

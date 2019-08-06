@@ -128,8 +128,6 @@ A polar area chart is similar to a ringplot, except that the sectors correspondi
 To illustrate, we're going to reproduce the classic plot by [Florence Nightingale](https://en.wikipedia.org/wiki/Pie_chart#Polar_area_diagram):
 
 ``` r
-require(ggfree)
-require(RColorBrewer)
 pal <- brewer.pal(3, 'Pastel2')
 
 # load the Florence Nightingale data set (note, need to install HistData)
@@ -153,3 +151,16 @@ legend(x=-0.8, y=0.6, legend=c('Wounds', 'Other', 'Disease'), bty='n',
 <img src="man/figures/README-unnamed-chunk-9-1.png" width="500" style="display: block; margin: auto;" />
 
 ### Ridgeplots
+
+Ridgeplots are basically stacked [kernel densities](https://en.wikipedia.org/wiki/Kernel_density_estimation). Displacing each density curve a small amount along the vertical axis can make it easier to distinguish one curve from another. The end result can also resemble a topographical map, which is likely the etymology of the name for this type of plot.
+
+In this example, we're going to make use of the `add.alpha` function in `ggfree:common` that adds transparency to colour specifications in R:
+
+``` r
+par(mar=c(5,5,1,1))
+pal <- add.alpha(brewer.pal(3, 'Set1'), 0.5)
+ridgeplot(split(iris$Sepal.Length, iris$Species), step=0.4, col='white', 
+fill=pal, lwd=2, xlab='Sepal length', cex.lab=1.2)
+```
+
+<img src="man/figures/README-unnamed-chunk-10-1.png" width="400" style="display: block; margin: auto;" />
