@@ -46,14 +46,15 @@ draw.arc <- function(x, y, theta0, theta1, r0, r1=NA, n=64, ...) {
 #' labels.
 #' 
 #' @examples
-#' # nested ring-plots
-#' ringplot(c(1,3,2,4), r0=0.5, r1=0.7)
-#' ringplot(c(6,8,10,9,7), x=0, y=0, r0=0.7, r1=0.9, theta=0.2, 
-#' col=rainbow(5, s=0.25))
-#' text(x=0, y=0, adj=0.5, label='0')
+#' require(RColorBrewer)
+#' pal1 <- brewer.pal(5, 'Blues')
+#' pal2 <- brewer.pal(5, 'Reds')
 #' 
-#' # labeled ringplot
-#' ringplot(VADeaths[,1], r0=0.3, r1=0.7, use.names=T, offset=0.05, srt=90, cex.label=1)
+#' # nested ring-plots
+#' ringplot(VADeaths[,1], r0=0.3, r1=0.6, col=pal1)
+#' ringplot(VADeaths[,2], x=0, y=0, r0=0.6, r1=0.9, col=pal2, 
+#' use.names=T, offset=0.05, srt=90)
+#' text(x=0, y=0, adj=0.5, label='VADeaths', cex=0.8)
 #' 
 #' @param vec: a numeric vector containing data for plotting
 #' @param r0: radius to inner edge of ring.  If set to 0, ringplot
@@ -120,7 +121,7 @@ ringplot <- function(vec, r0, r1, theta=pi/2, x=NA, y=NA,
 
 # essentially a stacked ringplot
 sunburst <- function(x) {
-  
+  # work in progress!
 }
 
 
