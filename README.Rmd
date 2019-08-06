@@ -168,3 +168,8 @@ ridgeplot(split(iris$Sepal.Length, iris$Species), step=0.4, col='white',
 fill=pal, lwd=2, xlab='Sepal length', cex.lab=1.2)
 ```
 
+
+## Other works
+
+* @aronekuld's [beeswarm](https://github.com/aroneklund/beeswarm) provides a nice implementation of dot plots where overlapping points are displaced away from the vertical axis so they can be seen individually.
+

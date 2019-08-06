@@ -1,16 +1,26 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-ggfree: ggplot2-style plots with just base R graphics
-=====================================================
 
-[ggplot2](https://ggplot2.tidyverse.org/) is a popular R graphics package that is becoming synonymous with data visualization in R. The community of developers working within the `ggplot2` framework have implemented some [rather nice extensions](https://www.ggplot2-exts.org/gallery/) as well. However, it is almost always possible for a visualization produced in `ggplot2` to also be generated using the base graphics package in R. Long-time users of R who are accustomed to building plots with the latter may find the syntax of `ggplot2` counter-intuitive and awkward.
+# ggfree: ggplot2-style plots with just base R graphics
 
-The overall purpose of `ggfree` is to make it easier to generate plots in the style of [ggplot2](https://ggplot2.tidyverse.org/) and its extensions, without ever actually using any ggplot2 code.
+[ggplot2](https://ggplot2.tidyverse.org/) is a popular R graphics
+package that is becoming synonymous with data visualization in R. The
+community of developers working within the `ggplot2` framework have
+implemented some [rather nice
+extensions](https://www.ggplot2-exts.org/gallery/) as well. However, it
+is almost always possible for a visualization produced in `ggplot2` to
+also be generated using the base graphics package in R. Long-time users
+of R who are accustomed to building plots with the latter may find the
+syntax of `ggplot2` counter-intuitive and awkward.
 
-Installation
-------------
+The overall purpose of `ggfree` is to make it easier to generate plots
+in the style of [ggplot2](https://ggplot2.tidyverse.org/) and its
+extensions, without ever actually using any ggplot2 code.
 
-For the time being, the simplest method is to use the `devtools` package:
+## Installation
+
+For the time being, the simplest method is to use the `devtools`
+package:
 
 ``` r
 # install.packages('devtools')  # if you haven't already installed devtools
@@ -18,14 +28,16 @@ require(devtools)
 devtools::install_github("ArtPoon/ggfree")
 ```
 
-(You could also simply copy-paste the functions you want to use into your R script.)
+(You could also simply copy-paste the functions you want to use into
+your R script.)
 
-Examples
---------
+## Examples
 
 ### Fancy gridlines
 
-The major and minor gridlines on a shaded background is one of the distinctive characteristics of the default `ggplot2` theme. This implementation uses `rect` and `abline` to obtain the same look.
+The major and minor gridlines on a shaded background is one of the
+distinctive characteristics of the default `ggplot2` theme. This
+implementation uses `rect` and `abline` to obtain the same look.
 
 ``` r
 require(ggfree)
@@ -39,7 +51,8 @@ points(faithful$eruptions, faithful$waiting, pch=21, bg='white')
 
 <img src="man/figures/README-unnamed-chunk-3-1.png" width="400" style="display: block; margin: auto;" />
 
-We can also vary the colours, turn off major or minor gridlines, or skip vertical or horizontal lines:
+We can also vary the colours, turn off major or minor gridlines, or skip
+vertical or horizontal lines:
 
 ``` r
 plot(NA, xlim=range(faithful$eruptions), ylim=range(faithful$waiting),
@@ -53,7 +66,11 @@ points(faithful$eruptions, faithful$waiting, pch=21, bg='white')
 
 ### Slopegraphs
 
-In general, a slopegraph is a method for visually comparing a paired set of observations. To illustrate the use of slopegraphs, I've adapted a carbon dioxide emissions data set similar to the one used by @clauswilke to demonstrate slopegraphs in *Fundamentals of Data Visualization*. This data sets is packaged with `ggfree`:
+In general, a slopegraph is a method for visually comparing a paired set
+of observations. To illustrate the use of slopegraphs, I’ve adapted a
+carbon dioxide emissions data set similar to the one used by @clauswilke
+to demonstrate slopegraphs in *Fundamentals of Data Visualization*. This
+data sets is packaged with `ggfree`:
 
 ``` r
 require(ggfree)
@@ -71,15 +88,22 @@ co2.emissions
 #> Faeroe Islands                   4.10         3.53
 ```
 
-There are two styles of slopegraphs that are implemented in `ggfree`. For the first style (where the argument `type` is left at its default value `'b'`), a vertical axis provides reference for the numerical values:
+There are two styles of slopegraphs that are implemented in `ggfree`.
+For the first style (where the argument `type` is left at its default
+value `'b'`), a vertical axis provides reference for the numerical
+values:
 
 ``` r
 slopegraph(co2.emissions, colorize=T)
 ```
 
-<img src="man/figures/README-unnamed-chunk-6-1.png" width="500" style="display: block; margin: auto;" /> Setting `colorize` to `TRUE` causes the line segments to be coloured to emphasize positive and negative slopes.
+<img src="man/figures/README-unnamed-chunk-6-1.png" width="500" style="display: block; margin: auto;" />
+Setting `colorize` to `TRUE` causes the line segments to be coloured to
+emphasize positive and negative slopes.
 
-For the second style (setting `type='t'`), we substitute the raw numerical values for data points, which makes the vertical axis unnecessary:
+For the second style (setting `type='t'`), we substitute the raw
+numerical values for data points, which makes the vertical axis
+unnecessary:
 
 ``` r
 par(family='Palatino')  # use a fancier font
@@ -96,9 +120,18 @@ title(expression(text=paste('CO'[2], ' emissions (metric tons) per capita')),
 
 ### Ringplots
 
-A ring- or donut-plot is simply a piechart with a hole in it. Piecharts have been criticized for being potentially misleading because it is difficult to compare the areas of two different sectors by eye. However, they are intuitive and compact visual devices, and multiple plots can be drawn in varying sizes to encode additional information, such as sample size. The additional advantages of ringplots is that information can be embedded in the middle of the plot as text, and multiple ringplots can be nested within each other to display hierarchical frequency data (these are sometimes known as "sunburst" plots).
+A ring- or donut-plot is simply a piechart with a hole in it. Piecharts
+have been criticized for being potentially misleading because it is
+difficult to compare the areas of two different sectors by eye. However,
+they are intuitive and compact visual devices, and multiple plots can be
+drawn in varying sizes to encode additional information, such as sample
+size. The additional advantages of ringplots is that information can be
+embedded in the middle of the plot as text, and multiple ringplots can
+be nested within each other to display hierarchical frequency data
+(these are sometimes known as “sunburst” plots).
 
-To generate a ring-plot in `ggfree`, you need to pass a vector of numeric values and specify the inner and outer radii:
+To generate a ring-plot in `ggfree`, you need to pass a vector of
+numeric values and specify the inner and outer radii:
 
 ``` r
 # prepare colour palettes
@@ -123,9 +156,14 @@ text(x=0, y=0, adj=0.5, label='Death rates\nin Virginia\n(1940)', cex=0.8)
 
 ### Polar area charts
 
-A polar area chart is similar to a ringplot, except that the sectors corresponding to different levels of a factor are drawn at regular angles from the centre. Instead, the frequencies of the respective levels are visualized by scaling the *area* of the annular sector (donut slice).
+A polar area chart is similar to a ringplot, except that the sectors
+corresponding to different levels of a factor are drawn at regular
+angles from the centre. Instead, the frequencies of the respective
+levels are visualized by scaling the *area* of the annular sector (donut
+slice).
 
-To illustrate, we're going to reproduce the classic plot by [Florence Nightingale](https://en.wikipedia.org/wiki/Pie_chart#Polar_area_diagram):
+To illustrate, we’re going to reproduce the classic plot by [Florence
+Nightingale](https://en.wikipedia.org/wiki/Pie_chart#Polar_area_diagram):
 
 ``` r
 pal <- brewer.pal(3, 'Pastel2')
@@ -152,9 +190,15 @@ legend(x=-0.8, y=0.6, legend=c('Wounds', 'Other', 'Disease'), bty='n',
 
 ### Ridgeplots
 
-Ridgeplots are basically stacked [kernel densities](https://en.wikipedia.org/wiki/Kernel_density_estimation). Displacing each density curve a small amount along the vertical axis can make it easier to distinguish one curve from another. The end result can also resemble a topographical map, which is likely the etymology of the name for this type of plot.
+Ridgeplots are basically stacked [kernel
+densities](https://en.wikipedia.org/wiki/Kernel_density_estimation).
+Displacing each density curve a small amount along the vertical axis can
+make it easier to distinguish one curve from another. The end result can
+also resemble a topographical map, which is likely the etymology of the
+name for this type of plot.
 
-In this example, we're going to make use of the `add.alpha` function in `ggfree:common` that adds transparency to colour specifications in R:
+In this example, we’re going to make use of the `add.alpha` function in
+`ggfree:common` that adds transparency to colour specifications in R:
 
 ``` r
 par(mar=c(5,5,1,1))
@@ -164,3 +208,10 @@ fill=pal, lwd=2, xlab='Sepal length', cex.lab=1.2)
 ```
 
 <img src="man/figures/README-unnamed-chunk-10-1.png" width="400" style="display: block; margin: auto;" />
+
+## Other works
+
+  - @aronekuld’s [beeswarm](https://github.com/aroneklund/beeswarm)
+    provides a nice implementation of dot plots where overlapping points
+    are displaced away from the vertical axis so they can be seen
+    individually.
