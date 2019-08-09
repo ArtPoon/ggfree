@@ -4,9 +4,9 @@
 \alias{polarplot}
 \title{polarplot}
 \usage{
-polarplot(obj, x = 0, y = 0, r = 0, theta = 0.5 * pi,
-  decay = 0.8, col = NA, use.names = FALSE, pad.names = 0.05,
-  cex.names = 0.8, ...)
+polarplot(obj, x = 0, y = 0, r = 0, theta = 0.5 * pi, space = 0,
+  col = NA, use.names = FALSE, pad.names = 0.05, cex.names = 0.8,
+  ...)
 }
 \arguments{
 \item{obj:}{a numeric vector, matrix or table of frequency data}
@@ -15,9 +15,8 @@ polarplot(obj, x = 0, y = 0, r = 0, theta = 0.5 * pi,
 
 \item{theta:}{rotation offset for plot in radians, defaults to pi/2}
 
-\item{decay:}{wedges become "squished" with increasing distance from the
-origin - 'decay' is a factor between 0 and 1 that progressively
-reduces the arc length of wedges.  Defaults to 1 (no decay).}
+\item{space:}{a numeric vector on interval [0,1).  Values are reused as
+necessary.  Defaults to 0.}
 
 \item{col:}{a vector of colour strings}
 
@@ -51,5 +50,8 @@ title('Causes of mortality in British army, Crimean War (1855)',
       font.main=1, line=-3)
 legend(x=-0.8, y=0.6, legend=c('Wounds', 'Other', 'Disease'), bty='n', 
        fill=pal, cex=0.9)
+       
+# generate a wind rose (https://en.wikipedia.org/wiki/Wind_rose)
+
 
 }

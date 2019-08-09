@@ -44,13 +44,14 @@ If 'vec' is a named vector, setting use.names=TRUE will add
 labels.
 }
 \examples{
-# nested ring-plots
-ringplot(c(1,3,2,4), r0=0.5, r1=0.7)
-ringplot(c(6,8,10,9,7), x=0, y=0, r0=0.7, r1=0.9, theta=0.2, 
-col=rainbow(5, s=0.25))
-text(x=0, y=0, adj=0.5, label='0')
+require(RColorBrewer)
+pal1 <- brewer.pal(5, 'Blues')
+pal2 <- brewer.pal(5, 'Reds')
 
-# labeled ringplot
-ringplot(VADeaths[,1], r0=0.3, r1=0.7, use.names=T, offset=0.05, srt=90, cex.label=1)
+# nested ring-plots
+ringplot(VADeaths[,1], r0=0.3, r1=0.6, col=pal1)
+ringplot(VADeaths[,2], x=0, y=0, r0=0.6, r1=0.9, col=pal2, 
+use.names=T, offset=0.05, srt=90)
+text(x=0, y=0, adj=0.5, label='VADeaths', cex=0.8)
 
 }
