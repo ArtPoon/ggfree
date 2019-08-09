@@ -23,7 +23,7 @@
 #' lwd.major=0.5, lwd.minor=0))
 #' 
 #' @param x: a list of numeric vectors, such as produced by calling split().
-#' @param xlim: by default, automatically set to range of
+#' @param xlim: by default, automatically set to range of horizontal axis.
 #' @param labels: override names in list 'x'
 #' @param xlab: string to label x-axis (default NA)
 #' @param ylab: string to label y-axis (default NA)
@@ -39,6 +39,7 @@
 #' @param grid.args: list of optional arguments for add.grid()
 #' @param extend.lines: whether to draw densities across the horizontal range of plot.  
 #' Defaults to TRUE.
+#' @param add: if TRUE, add the series of densities to existing plot.
 #' @param ...: additional arguments for plot()
 #' 
 #' @export

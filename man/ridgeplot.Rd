@@ -4,12 +4,15 @@
 \alias{ridgeplot}
 \title{ridgeplot}
 \usage{
-ridgeplot(x, labels = NA, xlab = NA, ylab = NA, step = 0.2,
-  col = NA, fill = NA, lwd = 1, density.args = list(),
-  add.grid = F, grid.args = list(), ...)
+ridgeplot(x, xlim = NA, labels = NA, yaxt = "s", xlab = NA,
+  ylab = NA, step = 0.2, col = NA, fill = NA, lwd = 1,
+  density.args = list(), add.grid = F, grid.args = list(),
+  extend.lines = TRUE, add = FALSE, ...)
 }
 \arguments{
 \item{x:}{a list of numeric vectors, such as produced by calling split().}
+
+\item{xlim:}{by default, automatically set to range of horizontal axis.}
 
 \item{labels:}{override names in list 'x'}
 
@@ -33,6 +36,11 @@ colours if there are fewer than the number of groups in 'x'.}
 \item{add.grid:}{if TRUE, call add.grid() before drawing densities}
 
 \item{grid.args:}{list of optional arguments for add.grid()}
+
+\item{extend.lines:}{whether to draw densities across the horizontal range of plot.
+Defaults to TRUE.}
+
+\item{add:}{if TRUE, add the series of densities to existing plot.}
 
 \item{...:}{additional arguments for plot()}
 }
