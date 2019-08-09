@@ -21,7 +21,7 @@
 #' 
 #' @export
 add.grid <- function(mode='xy', fg.col='white', bg.col='ivory2', 
-                     lwd.major=3, lwd.minor=1) {
+                     lwd.major=3, lwd.minor=1, bty='o') {
   u <- par('usr')  # get plot region dimensions
   x <- par('xaxp')
   y <- par('yaxp')
@@ -43,7 +43,7 @@ add.grid <- function(mode='xy', fg.col='white', bg.col='ivory2',
     abline(h=y.minor, col=fg.col, lwd=lwd.minor, lend=2)    
   }
 
-  box()  # redraw plot border
+  box(bty=bty)  # redraw plot border
 }
 
 

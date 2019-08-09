@@ -139,11 +139,11 @@ sunburst <- function(x) {
 #' ng <- subset(Nightingale, Year==1855, c('Wounds.rate', 'Other.rate', 'Disease.rate'))
 #' row.names(ng) <- Nightingale$Month[Nightingale$Year==1855]
 #' 
-#' par(mar=rep(0,4))
+#' par(mar=rep(0,4), family='Palatino')
 #' polarplot(as.matrix(ng), x=0.2, y=0.3, decay=1, theta=1.1*pi, col=pal, 
 #' use.names=T)
 #' title('Causes of mortality in British army, Crimean War (1855)', 
-#'       font.main=1, family='Palatino', line=-3)
+#'       font.main=1, line=-3)
 #' legend(x=-0.8, y=0.6, legend=c('Wounds', 'Other', 'Disease'), bty='n', 
 #'        fill=pal, cex=0.9)
 #' 
