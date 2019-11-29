@@ -40,7 +40,7 @@
 #' 
 #' @export
 ridgeplot <- function(x, labels=NA, xlab=NA, ylab=NA, step=0.2,
-                      col=NA, fill=NA, lwd=1, density.args=list(),
+                      xlim=NA, col=NA, fill=NA, lwd=1, density.args=list(),
                       add.grid=F, grid.args=list(), ...) {
 
   # check inputs
@@ -79,8 +79,12 @@ ridgeplot <- function(x, labels=NA, xlab=NA, ylab=NA, step=0.2,
     bg <- rep(fill, length.out=n)
   }
   
+  if (all(is.na(xlim))) {
+    xlim <- range(all.x)
+  }
+  
   # generate plot region
-  plot(NA, xlim=range(all.x), ylim=range(all.y), xlab=xlab, ylab=ylab, yaxt='n', ...)
+  plot(NA, xlim=xlim, ylim=range(all.y), xlab=xlab, ylab=ylab, yaxt='n', ...)
   axis(side=2, at=seq(step, n*step, step), labels=labels, las=2)
   
   # optional grid
