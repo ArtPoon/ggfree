@@ -1,5 +1,91 @@
 # WORK IN PROGRESS
 
+#' as.phyloData
+#' 
+#' Convert a `phylo` object into a data frame of edge information and 
+#' a vector of node information.
+#' 
+#' @param phy:  an S3 object of class `phylo` (`ape` package), which 
+#'        must be a rooted tree.
+#' @return an S3 object of class `phyloData`
+#' @export
+as.phyloData <- function(phy) {
+  if (!is.element('phylo', class(phy))) {
+    stop("Error: as.phyloData requires an ape:phylo object as input.")
+  }
+  if (!is.rooted(phy)) {
+    stop("Error: phylo object must be rooted.")
+  }
+  
+  phy <- reorder(phy, 'postorder')
+  
+  # convert phylo object to data frame
+  edges <- data.frame(
+    parent = phy$edge[,1],
+    child = phy$edge[,2],
+    length = phy$edge.length,
+    isTip = (phy$edge[,2] <= Ntip(phy))
+  )
+  
+  nodes <- data.frame(
+    row.names = c(phy$tip.label, phy$node.label),
+    # total branch length from root to node
+    x = node.depth.edgelength(phy)
+  )
+  
+  # calculate number of tips per node
+  st <- subtrees(phy)
+  nodes$n.tips <- c(rep(0, Ntip(phy)), sapply(st, Ntip))
+  
+  # carry over any other edge- or node-level information
+  # we assume these are ordered to match the respective attribute!
+  default.keys <- c('tip.label', 'node.label', 'Nnode', 'edge', 
+                    'edge.length')
+  for (key in names(phy)) {
+    if (!is.element(key, default.keys)) {
+      vec <- phy[[key]]
+      
+      if (length(vec) == nrow(edges)) {
+        edges[key] <- vec
+      }
+      else if (length(vec) == nrow(nodes)) {
+        nodes[key] <- vec
+      }
+      else {
+        warning("as.phyloData ignoring attribute ", key, 
+                " of length ", length(vec))
+      }
+    }
+  }
+
+  
+  obj <- list(edges=edges, nodes=nodes)
+  class(obj) <- 'phyloData'
+  obj
+}
+
+
+
+
+
+#' print.phyloData
+#' 
+#' Generic function to display object.
+#' @param obj:  S3 object of class `phyloData`
+#' @export
+print.phyloData <- function(obj) {
+  n <- sum(obj$edges$isTip)
+  cat("Phylogenetic data with", n, "tips and",
+      nrow(obj$nodes)-n, "internal nodes.\n")
+  cat("nodes:\n")
+  cat(str(head(obj$nodes)))
+  cat("edges:\n")
+  cat(str(head(obj$edges)))
+}
+
+
+
+
 #' layout.rect
 #' 
 #' Generate the coordinates for a rectangular layout of an ape:phylo
@@ -11,10 +97,36 @@
 #' @return S3 object of class `phyloLayout`
 #' @export
 layout.rect <- function(phy, unscaled=FALSE) {
-  warning("Under development")
-  n <- length(phy$tip.label)
+  phy <- reorder(phy, 'postorder')
+  subs <- subtrees(phy)
+  names(subs) <- phy$node.label
   
+  pd <- as.phyloData(phy)
+  
+  # assign integer vertical positions to tips
+  tips <- pd$edges$child[edges$isTip]
+  pd$nodes$y <- rep(NA, nrow(pd$nodes))
+  pd$nodes$y[tips] <- 1:Ntip(phy)
+  
+  # assign vertical positions to internal nodes
+  internals <- edges$child[!edges$isTip]
+  for (i in internals) {
+    # retrieve subtree by node label
+    st <- subs[[ as.character(row.names(pd$nodes)[i]) ]]
+    y.tips <- pd$nodes$y[which(is.element(row.names(pd$nodes), st$tip.label))]
+    pd$nodes$y[i] <- mean(y.tips)
+  }
+  root <- Ntip(phy)+1
+  pd$nodes$y[root] <- mean(1:Ntip(phy))
+  
+  pd$edges$x0 <- pd$nodes$x[pd$edges$parent]
+  pd$edges$x1 <- pd$nodes$x[pd$edges$child]
+  pd$edges$y0 <- pd$nodes$y[pd$edges$parent]
+  pd$edges$y1 <- pd$nodes$y[pd$edges$child]
+  
+  pd
 }
+
 
 
 #' layout.radial
@@ -41,4 +153,30 @@ layout.radial <- function(phy) {
 #'  @export 
 layout.equalangle <- function(phy) {
   warning("Under development")
+}
+
+
+plot.phyloData <- function(pd, ...) {
+  if (!is.element('phyloData', class(pd))) {
+    stop("Argument `pd` must be S3 object of class `phyloData`")
+  }
+  if (is.null(pd$nodes$y)) {
+    stop("You have to apply one of the layout functions to the `phyloData` ",
+         "object before plotting! e.g., `layout.rect()`")
+  }
+  
+  # prepare the plot region
+  par(mar=rep(0.1,4))
+  plot(NA, xlim=c(0, max(pd$nodes$x)+1), ylim=c(0, max(pd$nodes$y)),
+       main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
+  segments(pd$edges$x0, pd$edges$y0, pd$edges$x1, pd$edges$y1)
+}
+
+points.phyloData <- function(pd, ...) {
+  
+}
+
+
+axis.phyloData <- function(pd, ...) {
+  
 }
