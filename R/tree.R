@@ -20,8 +20,14 @@ phy <- as.phylo(eventlog, transmissions=TRUE, migrations=TRUE)
 #' @param phy:  an S3 object of class `phylo` (`ape` package), which 
 #'        must be a rooted tree.
 #' @return an S3 object of class `phyloData`
+#' 
+#' @examples 
+#' require(ape)
+#' phy <- rtree(20)
+#' as.phyloData(phy)
+#' 
 #' @export
-as.phyloData <- function(phy) {
+as.phyloData <- function(phy, unscaled=FALSE) {
   if (!is.element('phylo', class(phy))) {
     stop("Error: as.phyloData requires an ape:phylo object as input.")
   }
@@ -40,11 +46,17 @@ as.phyloData <- function(phy) {
     isTip = (phy$edge[,2] <= Ntip(phy))
   )
   
+  # total branch length from root to node
+  if (unscaled) {
+    depths <- Ntip(phy)-node.depth(phy)
+  } else {
+    depths <- node.depth.edgelength(phy)
+  }
+  
   # convert node attributes to data frame
   nodes <- data.frame(
     row.names = c(phy$tip.label, phy$node.label),
-    # total branch length from root to node
-    x = node.depth.edgelength(phy)
+    x = depths
   )
   # calculate number of tips per node
   st <- subtrees(phy)
@@ -79,9 +91,6 @@ as.phyloData <- function(phy) {
 }
 
 
-
-
-
 #' print.phyloData
 #' 
 #' Generic function to display object.
@@ -98,26 +107,63 @@ print.phyloData <- function(obj) {
 }
 
 
-
-
-#' layout.rect
+#' tree.layout
 #' 
-#' Generate the coordinates for a rectangular layout of an ape:phylo
-#' object.
+#' Generate the coordinates for the nodes and edges of a 
+#' phylogenetic tree (ape:phylo object) using one of several
+#' layout algorithms.  Used before calling the generic plot
+#' functions (plot, points).
 #' 
 #' @param phy:  an S3 object of class `phylo``
+#' @param type:  what type of layout algorithm to employ:
+#' \itemize {
+#'   \item{"r"}{Rectangular layout}
+#'   \item{"s"}{Slanted (triangular) layout}
+#'   \item{"u"}{Unrooted (equal-angle) layout}
+#'   \item{"c"}{Circular (radial) layout}
+#' }
 #' @param unscaled:  if TRUE, return a cladogram layout
 #' 
 #' @return S3 object of class `phyloLayout`
+#' 
+#' @examples 
+#' require(ape)
+#' phy <- rcoal(20)
+#' lay <- tree.layout(phy, 's')
+#' head(lay$edges)
+#' 
 #' @export
-layout.rect <- function(phy, unscaled=FALSE) {
+tree.layout <- function(phy, type='r', unscaled=FALSE) {
+  if (type=='r') {
+    layout.rect(phy, unscaled, slanted=FALSE)
+  }
+  else if (type=='s') {
+    layout.rect(phy, unscaled, slanted=TRUE)
+  }
+  else if (type=='u') {
+    # unrooted
+    layout.equalangle(phy, unscaled)
+  }
+  else if (type == 'o') {
+    layout.radial(phy, unscaled)
+  }
+  else {
+    stop("Unrecognized layout type '", type, "'")
+  }
+}
+
+
+.layout.rect <- function(phy, unscaled=FALSE) {
+  # automatically generate node labels if necessary
+  if (is.null(phy$node.label)) {
+    phy$node.label <- paste("Node", 1:Nnode(phy), sep='')
+  }
   
-  #phy2 <- reorder(phy, 'postorder')
   subs <- subtrees(phy)
   names(subs) <- phy$node.label
   
   # assign integer vertical positions to tips
-  pd <- as.phyloData(phy)
+  pd <- as.phyloData(phy, unscaled)
   
   tips <- pd$edges$child[pd$edges$isTip]
   pd$nodes$y <- rep(NA, nrow(pd$nodes))
@@ -152,8 +198,8 @@ layout.rect <- function(phy, unscaled=FALSE) {
 #' @param phy:  an S3 object of class `phylo`
 #' 
 #' @return S3 object of class `phyloLayout`
-#' @export
-layout.radial <- function(phy) {
+#' @keywords internal
+.layout.radial <- function(phy) {
   warning("Under development")
 }
 
@@ -166,16 +212,18 @@ layout.radial <- function(phy) {
 #'  @param phy:  an S3 object of class `phylo`
 #'  
 #'  @return S3 object of class `phyloLayout`
-#'  @export 
-layout.equalangle <- function(phy) {
+#'  @keywords internal
+.layout.equalangle <- function(phy) {
   warning("Under development")
 }
 
 
 #' plot.phyloLayout
 #' 
+#' Generic plot function for S3 objects of class `phyloLayout`.
+#' 
 plot.phyloLayout <- function(pd, ...) {
-  if (!is.element('phyloData', class(pd))) {
+  if (!is.element('phyloLayout', class(pd))) {
     stop("Argument `pd` must be S3 object of class `phyloData`")
   }
   if (is.null(pd$nodes$y)) {
