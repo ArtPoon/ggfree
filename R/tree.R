@@ -323,17 +323,15 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
     
     # draw vertical edges?
     if (obj$layout=='rectangular') {
-      # reorder edges by postorder traversal (grouped by parent)
-      edges <- obj$edges[obj$postorder, ]
-      # FIXME: this assumes binary trees (use split() on parent instead)
-      for (i in seq(1, nrow(edges), 2)) {
-        # If user specifies variable line widths for edges, then vertical 
-        # edges should have an arbitrary constant width.
-        segments(x0=edges[i,]$x0, y0=edges[i,]$y0, 
-                 x1=edges[i,]$x0, y1=edges[i+1,]$y0, 
-                 lwd=ifelse(length(lwd)==1, lwd, 1),
+      . <- sapply(split(obj$edges, obj$edges$parent), function(e) {
+        x0 <- e[1,]$x0
+        y0 <- min(e$y0)
+        y1 <- max(e$y0)
+        # FIXME: what if `col` is a vector?
+        segments(x0=x0, y0=y0, x1=x0, y1=y1, 
+                 lwd=ifelse(length(lwd)==1, lwd, 1), 
                  col=col)
-      }
+      })
     }
     
     if (label != 'n') {
