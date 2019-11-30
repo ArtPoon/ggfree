@@ -46,22 +46,16 @@ as.phyloData <- function(phy, unscaled=FALSE) {
     isTip = (phy$edge[,2] <= Ntip(phy))
   )
   
-  # total branch length from root to node
-  if (unscaled) {
-    depths <- Ntip(phy)-node.depth(phy)
-  } else {
-    depths <- node.depth.edgelength(phy)
-  }
-  
   # convert node attributes to data frame
   nodes <- data.frame(
-    row.names = c(phy$tip.label, phy$node.label),
-    x = depths
+    label = c(phy$tip.label, phy$node.label)
   )
+  
   # calculate number of tips per node
   st <- subtrees(phy)
   nodes$n.tips <- c(rep(0, Ntip(phy)), sapply(st, Ntip))
   
+
   # carry over any non-default attributes
   # we assume these are ordered correctly!
   default.keys <- c('tip.label', 'node.label', 'Nnode', 'edge', 'edge.length')
@@ -82,6 +76,13 @@ as.phyloData <- function(phy, unscaled=FALSE) {
     }
   }
 
+  # total branch length from root to node
+  if (unscaled) {
+    nodes$x <- Ntip(phy)-node.depth(phy)
+  } else {
+    nodes$x <- node.depth.edgelength(phy)
+  }
+  
   # return to original ordering (we don't have to change nodes)
   #index <- match(phy$edge[,2], edges$child)
   
@@ -129,23 +130,23 @@ print.phyloData <- function(obj) {
 #' @examples 
 #' require(ape)
 #' phy <- rcoal(20)
-#' lay <- tree.layout(phy, 's')
+#' lay <- tree.layout(phy, 'r')
 #' head(lay$edges)
 #' 
 #' @export
 tree.layout <- function(phy, type='r', unscaled=FALSE) {
   if (type=='r') {
-    layout.rect(phy, unscaled, slanted=FALSE)
+    .layout.rect(phy, unscaled, slanted=FALSE)
   }
   else if (type=='s') {
-    layout.rect(phy, unscaled, slanted=TRUE)
+    .layout.rect(phy, unscaled, slanted=TRUE)
   }
   else if (type=='u') {
     # unrooted
-    layout.equalangle(phy, unscaled)
+    .layout.equalangle(phy, unscaled)
   }
   else if (type == 'o') {
-    layout.radial(phy, unscaled)
+    .layout.radial(phy, unscaled)
   }
   else {
     stop("Unrecognized layout type '", type, "'")
@@ -153,7 +154,32 @@ tree.layout <- function(phy, type='r', unscaled=FALSE) {
 }
 
 
-.layout.rect <- function(phy, unscaled=FALSE) {
+#' print.phyloLayout
+#' 
+#' Generic function to display object.
+#' @param obj:  S3 object of class `phyloLayout`
+#' @export
+print.phyloLayout <- function(obj) {
+  n <- sum(obj$edges$isTip)
+  cat("Phylogenetic layout using a", obj$layout, "algorithm\n",
+      "with", n, "tips and", nrow(obj$nodes)-n, "internal nodes.\n\n")
+  cat(paste0("$nodes (", nrow(obj$nodes)), "nodes with", ncol(obj$nodes), "attributes):\n")
+  print(head(obj$nodes))
+  cat("\n")
+  cat(paste0("$edges (", nrow(obj$edges)), "edges with", ncol(obj$edges), "attributes):\n")
+  print(head(obj$edges))
+  cat("\n")
+}
+
+
+
+#' .layout.rect
+#' 
+#' Algorithm to generate a "rectangular" (left to right) layout of a 
+#' phylogenetic tree, with the root at the left and tips on the right.
+#' 
+#' @keywords internal
+.layout.rect <- function(phy, unscaled=FALSE, slanted=FALSE) {
   # automatically generate node labels if necessary
   if (is.null(phy$node.label)) {
     phy$node.label <- paste("Node", 1:Nnode(phy), sep='')
@@ -173,8 +199,8 @@ tree.layout <- function(phy, type='r', unscaled=FALSE) {
   internals <- pd$edges$child[!pd$edges$isTip]
   for (i in internals) {
     # retrieve subtree by node label
-    st <- subs[[ as.character(row.names(pd$nodes)[i]) ]]
-    y.tips <- pd$nodes$y[which(is.element(row.names(pd$nodes), st$tip.label))]
+    st <- subs[[ as.character(pd$nodes$label[i]) ]]
+    y.tips <- pd$nodes$y[which(is.element(pd$nodes$label, st$tip.label))]
     pd$nodes$y[i] <- mean(y.tips)
   }
   root <- Ntip(phy)+1
@@ -182,8 +208,15 @@ tree.layout <- function(phy, type='r', unscaled=FALSE) {
 
   pd$edges$x0 <- pd$nodes$x[pd$edges$parent]
   pd$edges$x1 <- pd$nodes$x[pd$edges$child]
-  pd$edges$y0 <- pd$nodes$y[pd$edges$parent]
+  if (slanted) {
+    pd$edges$y0 <- pd$nodes$y[pd$edges$parent]  
+  } else {
+    pd$edges$y0 <- pd$nodes$y[pd$edges$child]
+  }
   pd$edges$y1 <- pd$nodes$y[pd$edges$child]
+  
+  pd$layout <- ifelse(slanted, 'slanted', 'rectangular')
+  pd$postorder <- postorder(phy)
   
   class(pd) <- c('phyloLayout', 'phyloData')
   pd
@@ -220,23 +253,86 @@ tree.layout <- function(phy, type='r', unscaled=FALSE) {
 
 #' plot.phyloLayout
 #' 
-#' Generic plot function for S3 objects of class `phyloLayout`.
+#' Generic plot function for phylogenetic trees with layouts generated
+#' using ggfree.  The coordinate system of the plot depends on the layout
+#' algorithm:
+#' \itemize {
+#'   \item Rectangular/slanted layout: The x-axis is scaled to the height
+#'   of the tree (from the root to the furthest tip).  The y-axis is scaled 
+#'   to the number of tips (1:Ntip(phy)).
+#'   \item Circular (radial) layout:  
+#' }
 #' 
-plot.phyloLayout <- function(pd, ...) {
-  if (!is.element('phyloLayout', class(pd))) {
-    stop("Argument `pd` must be S3 object of class `phyloData`")
+#' @param layout: S3 object of class `phyloLayout`
+#' @param lwd:  (optional) stroke width for line segments.  Either a single value applied
+#'        to all branches or a numeric vector in the same order as the edges 
+#'        (ape:phylo defaults to preorder traversal).  Defaults to 2.
+#' @param label:  If 'n', suppresses drawing of tip and node labels.  If 'b', both 
+#'        tip and node labels are drawn.  Defaults to 't' for tip labels only.
+#' @param mar:  (optional) vector of margin widths (graphical parameter).
+#' 
+#' @examples 
+#' require(ape)
+#' phy <- rcoal(20)
+#' layout <- tree.layout(phy, type='r')
+#' plot(layout)
+#' @export
+plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', mar=NA, cex.lab=0.8, ...) {
+  # check inputs
+  if (!is.element('phyloLayout', class(obj))) {
+    stop("Argument `obj` must be S3 object of class `phyloData`")
   }
-  if (is.null(pd$nodes$y)) {
+  if (is.null(obj$nodes$y)) {
     stop("You have to apply one of the layout functions to the `phyloData` ",
          "object before plotting! e.g., `layout.rect()`")
   }
   
-  # prepare the plot region
-  par(mar=rep(0.1,4))
-  plot(NA, xlim=c(0, max(pd$nodes$x)+1), ylim=c(0, max(pd$nodes$y)),
-       main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
-  segments(pd$edges$x0, pd$edges$y0, pd$edges$x1, pd$edges$y1)
+  if (is.element(obj$layout, c('slanted', 'rectangular'))) {
+    if (is.na(mar)) {
+      # default margins for rectangular layouts
+      par(mar=c(2,1,1,5))
+    }
+    # prepare the plot region
+    plot(NA, xlim=c(0, max(obj$nodes$x)), ylim=c(0, max(obj$nodes$y)+1),
+         main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
+    
+    segments(x0=obj$edges$x0, y0=obj$edges$y0, 
+             x1=obj$edges$x1, y1=obj$edges$y1,
+             lwd=lwd, col=col)
+    
+    # draw vertical edges?
+    if (obj$layout=='rectangular') {
+      # reorder edges by postorder traversal (grouped by parent)
+      edges <- obj$edges[obj$postorder, ]
+      for (i in seq(1, nrow(edges), 2)) {
+        # If user specifies variable line widths for edges, then vertical 
+        # edges should have an arbitrary constant width.
+        segments(x0=edges[i,]$x0, y0=edges[i,]$y0, 
+                 x1=edges[i,]$x0, y1=edges[i+1,]$y0, 
+                 lwd=ifelse(length(lwd)==1, lwd, 1),
+                 col=col)
+      }
+    }
+    
+    if (label != 'n') {
+      if (is.element(label, c('t', 'b'))) {
+        # draw tip labels
+        tips <- obj$nodes[obj$nodes$n.tips==0, ]
+        x.space <- max(tips$x) * 0.01
+        par(xpd=NA)
+        text(x=tips$x+x.space, y=tips$y, labels=tips$label, adj=0, cex=cex.lab)
+      }
+    }
+  }
+  
+  else if (obj$layout == 'radial') {
+    plot(NA, xlim=c(0, max(obj$nodes$x)), ylim=c(0, max(obj$nodes$y)+1),
+         main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
+    
+    segments(obj$edges$x0, obj$edges$y0, obj$edges$x1, obj$edges$y1)
+  }
 }
+
 
 points.phyloData <- function(pd, ...) {
   
