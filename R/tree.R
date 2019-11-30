@@ -1,5 +1,17 @@
 # WORK IN PROGRESS
 
+# to generate a tree
+require(twt)
+path <- system.file('extdata', 'structSI.yaml', package='twt')
+settings <- yaml.load_file(path)
+
+set.seed(1)
+structSI <- Model$new(settings)
+run <- sim.outer.tree(structSI)
+eventlog <- sim.inner.tree(run)
+phy <- as.phylo(eventlog, transmissions=TRUE, migrations=TRUE) 
+
+
 #' as.phyloData
 #' 
 #' Convert a `phylo` object into a data frame of edge information and 
@@ -17,9 +29,10 @@ as.phyloData <- function(phy) {
     stop("Error: phylo object must be rooted.")
   }
   
-  phy <- reorder(phy, 'postorder')
+  # use post-order traversal to gather related tips for layout
+  #phy2 <- reorder(phy, 'postorder')
   
-  # convert phylo object to data frame
+  # convert edge attributes into data frame
   edges <- data.frame(
     parent = phy$edge[,1],
     child = phy$edge[,2],
@@ -27,28 +40,27 @@ as.phyloData <- function(phy) {
     isTip = (phy$edge[,2] <= Ntip(phy))
   )
   
+  # convert node attributes to data frame
   nodes <- data.frame(
     row.names = c(phy$tip.label, phy$node.label),
     # total branch length from root to node
     x = node.depth.edgelength(phy)
   )
-  
   # calculate number of tips per node
   st <- subtrees(phy)
   nodes$n.tips <- c(rep(0, Ntip(phy)), sapply(st, Ntip))
   
-  # carry over any other edge- or node-level information
-  # we assume these are ordered to match the respective attribute!
-  default.keys <- c('tip.label', 'node.label', 'Nnode', 'edge', 
-                    'edge.length')
+  # carry over any non-default attributes
+  # we assume these are ordered correctly!
+  default.keys <- c('tip.label', 'node.label', 'Nnode', 'edge', 'edge.length')
   for (key in names(phy)) {
     if (!is.element(key, default.keys)) {
       vec <- phy[[key]]
-      
       if (length(vec) == nrow(edges)) {
         edges[key] <- vec
       }
       else if (length(vec) == nrow(nodes)) {
+        # NOTE nodes are unchanged in order (numbering)
         nodes[key] <- vec
       }
       else {
@@ -58,6 +70,8 @@ as.phyloData <- function(phy) {
     }
   }
 
+  # return to original ordering (we don't have to change nodes)
+  #index <- match(phy$edge[,2], edges$child)
   
   obj <- list(edges=edges, nodes=nodes)
   class(obj) <- 'phyloData'
@@ -97,19 +111,20 @@ print.phyloData <- function(obj) {
 #' @return S3 object of class `phyloLayout`
 #' @export
 layout.rect <- function(phy, unscaled=FALSE) {
-  phy <- reorder(phy, 'postorder')
+  
+  #phy2 <- reorder(phy, 'postorder')
   subs <- subtrees(phy)
   names(subs) <- phy$node.label
   
+  # assign integer vertical positions to tips
   pd <- as.phyloData(phy)
   
-  # assign integer vertical positions to tips
-  tips <- pd$edges$child[edges$isTip]
+  tips <- pd$edges$child[pd$edges$isTip]
   pd$nodes$y <- rep(NA, nrow(pd$nodes))
   pd$nodes$y[tips] <- 1:Ntip(phy)
   
   # assign vertical positions to internal nodes
-  internals <- edges$child[!edges$isTip]
+  internals <- pd$edges$child[!pd$edges$isTip]
   for (i in internals) {
     # retrieve subtree by node label
     st <- subs[[ as.character(row.names(pd$nodes)[i]) ]]
@@ -118,12 +133,13 @@ layout.rect <- function(phy, unscaled=FALSE) {
   }
   root <- Ntip(phy)+1
   pd$nodes$y[root] <- mean(1:Ntip(phy))
-  
+
   pd$edges$x0 <- pd$nodes$x[pd$edges$parent]
   pd$edges$x1 <- pd$nodes$x[pd$edges$child]
   pd$edges$y0 <- pd$nodes$y[pd$edges$parent]
   pd$edges$y1 <- pd$nodes$y[pd$edges$child]
   
+  class(pd) <- c('phyloLayout', 'phyloData')
   pd
 }
 
@@ -156,7 +172,9 @@ layout.equalangle <- function(phy) {
 }
 
 
-plot.phyloData <- function(pd, ...) {
+#' plot.phyloLayout
+#' 
+plot.phyloLayout <- function(pd, ...) {
   if (!is.element('phyloData', class(pd))) {
     stop("Argument `pd` must be S3 object of class `phyloData`")
   }
