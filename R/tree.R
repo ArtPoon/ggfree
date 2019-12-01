@@ -253,10 +253,45 @@ print.phyloLayout <- function(obj) {
 #'  @return S3 object of class `phyloLayout`
 #'  @keywords internal
 .layout.equalangle <- function(phy, unscaled) {
+  if (is.rooted(phy)) {
+    # FIXME: this breaks as.phyloData
+    phy <- unroot(phy)
+  }
   pd <- as.phyloData(phy, unscaled)
-  edges <- phy$edges[postorder(phy), ]
   
-  for (i in seq(1, nrow(edges), 2)) {
+  # allocate new node attributes
+  pd$nodes$start <- NA
+  pd$nodes$end <- NA
+  pd$nodes$angle <- NA
+  pd$nodes$r <- pd$nodes$x  # depth becomes radius
+  pd$nodes$x <- NA
+  pd$nodes$y <- NA
+  
+  # initialize at root
+  root <- unique(pd$edges$parent[which(
+    !is.element(pd$edges$parent, pd$edges$child)
+    )])
+  if (length(root) != 1) {
+    stop("Failed to locate root in .layout.equalangle")
+  }
+
+  pd$nodes$start[root] <- 0.
+  pd$nodes$end[root] <- 2*pi
+  pd$nodes$angle[root] <- 0.  # arbitrary
+  pd$nodes$x = 0;  # map to origin
+  pd$nodes$y = 0;
+  
+  # preorder traversal
+  last.start <- 0.
+  for (i in 1:nrow(pd$edges)) {
+    e <- pd$edges[i,]
+    parent <- pd$nodes[e$parent, ]
+    child <- pd$nodes[e$child, ]
+    
+    # assign proportion of parent's arc to child
+    arc <- (parent$end - parent$start) * child$n.tips/parent$n.tips
+    child$start <- last.start
+    child$end <- child$start + arc
     
   }
 }
@@ -334,6 +369,7 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
       })
     }
     
+    # node labeling
     if (label != 'n') {
       par(xpd=NA)
       x.space <- max(obj$nodes$x) * 0.01
@@ -352,6 +388,8 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
       par(xpd=FALSE)
     }
   }
+  
+  ##############################################
   
   else if (obj$layout == 'radial') {
     plot(NA, xlim=c(0, max(obj$nodes$x)), ylim=c(0, max(obj$nodes$y)+1),
