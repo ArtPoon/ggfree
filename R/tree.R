@@ -1,16 +1,3 @@
-# WORK IN PROGRESS
-
-# to generate a tree
-require(twt)
-path <- system.file('extdata', 'structSI.yaml', package='twt')
-settings <- yaml.load_file(path)
-
-set.seed(1)
-run <- sim.outer.tree(Model$new(settings))
-eventlog <- sim.inner.tree(run)
-structSI <- as.phylo(eventlog, transmissions=TRUE, migrations=TRUE) 
-
-
 #' as.phyloData
 #' 
 #' Convert a `phylo` object into a data frame of edge information and 
@@ -140,9 +127,11 @@ tree.layout <- function(phy, type='r', unscaled=FALSE) {
   }
   
   if (type=='r') {
+    # rectangular
     .layout.rect(phy, unscaled, slanted=FALSE)
   }
   else if (type=='s') {
+    # slanted
     .layout.rect(phy, unscaled, slanted=TRUE)
   }
   else if (type=='u') {
@@ -150,6 +139,7 @@ tree.layout <- function(phy, type='r', unscaled=FALSE) {
     .layout.equalangle(phy, unscaled)
   }
   else if (type == 'o') {
+    # circular (radial)
     .layout.radial(phy, unscaled)
   }
   else {
@@ -227,15 +217,51 @@ print.phyloLayout <- function(obj) {
 
 #' layout.radial
 #' 
-#' Generate the coordinates for a radial layout of a phylogenetic tree.
+#' Generate the coordinates for a radial layout of a phylogenetic tree
+#' within a circular region.
 #' 
 #' @param phy:  an S3 object of class `phylo`
 #' 
 #' @return S3 object of class `phyloLayout`
 #' @keywords internal
 .layout.radial <- function(phy, unscaled) {
-  pd <- as.phyloData(phy, unscaled)
+  # generate subtrees
+  subs <- subtrees(phy)
+  names(subs) <- phy$node.label
   
+  # convert phylo object to data frames
+  pd <- as.phyloData(phy, unscaled)
+  pd$nodes$r <- pd$nodes$x  # reassign depth to radius
+  
+  tips <- pd$edges$child[pd$edges$isTip]
+  pd$nodes$angle <- rep(NA, nrow(pd$nodes))
+  pd$nodes$angle[tips] <- (1:Ntip(phy)) / Ntip(phy) * 2 * pi
+  
+  # assign angles to internal nodes
+  internals <- pd$edges$child[!pd$edges$isTip]
+  for (i in internals) {
+    # retrieve subtree by node label
+    st <- subs[[ as.character(pd$nodes$label[i]) ]]
+    tip.angles <- pd$nodes$angle[which(is.element(pd$nodes$label, st$tip.label))]
+    pd$nodes$angle[i] <- mean(tip.angles)
+  }
+  root <- Ntip(phy)+1
+  pd$nodes$angle[root] <- 0  # arbitrary
+  
+  # calculate x,y from polar coordinates
+  pd$nodes$x <- pd$nodes$r * cos(pd$nodes$angle)
+  pd$nodes$y <- pd$nodes$r * sin(pd$nodes$angle)
+  
+  # map node coordinates to edges
+  pd$edges$x1 <- pd$nodes$x[pd$edges$child]
+  pd$edges$y1 <- pd$nodes$y[pd$edges$child]
+  
+  pd$edges$x0 <- pd$nodes$r[pd$edges$parent] * cos(pd$nodes$angle[pd$edges$child])
+  pd$edges$y0 <- pd$nodes$r[pd$edges$parent] * sin(pd$nodes$angle[pd$edges$child])
+  
+  pd$layout <- 'radial'
+  class(pd) <- c('phyloLayout', 'phyloData')
+  pd
 }
 
 
@@ -251,6 +277,8 @@ print.phyloLayout <- function(obj) {
 .layout.equalangle <- function(phy, unscaled) {
   if (is.rooted(phy)) {
     phy <- unroot(phy)
+    # unrooting destroys internal node labels
+    phy$node.label <- paste("Node", 1:Nnode(phy), sep='')
   }
   pd <- as.phyloData(phy, unscaled)
   
@@ -354,10 +382,23 @@ print.phyloLayout <- function(obj) {
 #' @param mar:  (optional) vector of margin widths (graphical parameter).
 #' 
 #' @examples 
+#' # generate random coalescent tree
 #' require(ape)
-#' phy <- rcoal(20)
-#' layout <- tree.layout(phy, type='r')
-#' plot(layout)
+#' phy <- rcoal(30)
+#' 
+#' # rectangular tree
+#' plot(tree.layout(phy, type='r'), mar=c(3,1,1,5))
+#' axis(side=1)
+#' 
+#' # slanted tree
+#' plot(tree.layout(phy, type='s'), col=rainbow(5, v=.7), lwd=3)
+#' 
+#' # unrooted tree
+#' plot(tree.layout(phy, type='u'))
+#' 
+#' # circular (radial) tree
+#' plot(tree.layout(phy, type='o'), label='b')
+#' 
 #' @export
 plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8, 
                              mar=NA, ...) {
@@ -402,17 +443,16 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
     # node labeling
     if (label != 'n') {
       par(xpd=NA)
-      x.space <- max(obj$nodes$x) * 0.01
       if (is.element(label, c('t', 'b'))) {
         # draw tip labels
         tips <- obj$nodes[obj$nodes$n.tips==0, ]
-        text(x=tips$x + x.space, y=tips$y, labels=tips$label, 
+        text(x=tips$x, y=tips$y, labels=paste0(' ', tips$label), 
              adj=0, cex=cex.lab)
       }
       if (is.element(label, c('i', 'b'))) {
         # draw internal labels
         internals <- obj$nodes[obj$nodes$n.tips>0, ]
-        text(x=internals$x + x.space, y=internals$y, labels=internals$label, 
+        text(x=internals$x, y=internals$y, labels=paste0(' ', internals$label), 
              adj=0, cex=cex.lab)
       }
       par(xpd=FALSE)
@@ -422,10 +462,52 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
   ##############################################
   
   else if (obj$layout == 'radial') {
-    plot(NA, xlim=c(0, max(obj$nodes$x)), ylim=c(0, max(obj$nodes$y)+1),
+    if (any(is.na(mar))) {
+      # default for radial layout
+      par(mar=rep(2, 4))
+    } else {
+      par(mar=mar)
+    }
+    
+    plot(NA, xlim=range(obj$nodes$x), ylim=range(obj$nodes$y),
          main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
     
     segments(obj$edges$x0, obj$edges$y0, obj$edges$x1, obj$edges$y1)
+    
+    temp <- split(obj$edges, obj$edges$parent)
+    for (e in temp) {
+      nodes <- obj$nodes[e$child,]
+      parent <- obj$nodes[unique(e$parent),]
+      start <- min(nodes$angle)
+      end <- max(nodes$angle)
+      draw.arc(0, 0, start, end, parent$r)
+    }
+    
+    # node labeling
+    if (label != 'n') {
+      par(xpd=NA)
+      if (is.element(label, c('t', 'b'))) {
+        # draw tip labels
+        tips <- obj$nodes[obj$nodes$n.tips==0, ]
+        for (i in 1:nrow(tips)) {
+          tip <- tips[i, ]
+          text(x=tip$x, y=tip$y, labels=paste0(' ', tip$label), 
+               srt=tip$angle/pi*180,  # radians to degrees
+               adj=0, cex=cex.lab)
+        }
+      }
+      if (is.element(label, c('i', 'b'))) {
+        # draw internal labels
+        internals <- obj$nodes[obj$nodes$n.tips>0, ]
+        for (i in 1:nrow(internals)) {
+          node <- internals[i, ]
+          text(x=node$x, y=node$y, labels=paste0(' ', node$label), 
+               srt=node$angle/pi*180,
+               adj=0, cex=cex.lab) 
+        }
+      }
+      par(xpd=FALSE)
+    }
   }
   
   ##############################################
@@ -453,7 +535,7 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
         tips <- obj$nodes[obj$nodes$n.tips==0, ]
         for (i in 1:nrow(tips)) {
           tip <- tips[i, ]
-          text(x=tip$x, y=tip$y, labels=tip$label, 
+          text(x=tip$x, y=tip$y, labels=paste0(' ', tip$label), 
                srt=-tip$angle*180+90,  # radians to degrees
                adj=0, cex=cex.lab)
         }
@@ -463,7 +545,7 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
         internals <- obj$nodes[obj$nodes$n.tips>0, ]
         for (i in 1:nrow(internals)) {
           node <- internals[i, ]
-          text(x=node$x, y=node$y, labels=node$label, 
+          text(x=node$x, y=node$y, labels=paste0(' ', node$label), 
                srt=-node$angle*180+90,
                adj=0, cex=cex.lab) 
         }
@@ -501,21 +583,28 @@ points.phyloLayout <- function(obj, ...) {
 }
 
 
-axis.phyloData <- function(obj, ...) {
-  
-}
 
-scale.bar <- function(obj, ...) {
-  
+#' add.scalebar
+#' Add a scale bar to the plot.
+add.scalebar <- function(obj, len=1, x=NA, y=NA, ...) {
+  if (is.na(x) | is.na(y)) {
+    # use default location
+    if (is.element(obj$layout, c('rectangular', 'slanted'))) {
+      
+    }
+  }
+
 }
 
 
 #' unroot
 #' 
-unroot <- function(phy) {
-  # make copy to avoid altering original tree
-  obj <- phy
-  
+#' If the `phylo` object contains non-default attributes for nodes
+#' or edges, then unrooting breaks the alignment between these 
+#' attributes and the tree. 
+#' 
+#' @export
+unroot <- function(obj) {
   # remove node and edge attributes associated with the root node
   if (is.rooted(obj)) {
     n.nodes <- Ntip(obj) + Nnode(obj)
