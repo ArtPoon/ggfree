@@ -31,9 +31,6 @@ as.phyloData <- function(phy, unscaled=FALSE) {
   if (!is.element('phylo', class(phy))) {
     stop("Error: as.phyloData requires an ape:phylo object as input.")
   }
-  if (!is.rooted(phy)) {
-    stop("Error: phylo object must be rooted.")
-  }
   
   # use post-order traversal to gather related tips for layout
   #phy2 <- reorder(phy, 'postorder')
@@ -254,7 +251,6 @@ print.phyloLayout <- function(obj) {
 #'  @keywords internal
 .layout.equalangle <- function(phy, unscaled) {
   if (is.rooted(phy)) {
-    # FIXME: this breaks as.phyloData
     phy <- unroot(phy)
   }
   pd <- as.phyloData(phy, unscaled)
@@ -276,24 +272,57 @@ print.phyloLayout <- function(obj) {
   }
 
   pd$nodes$start[root] <- 0.
-  pd$nodes$end[root] <- 2*pi
+  pd$nodes$end[root] <- 2  # PI
   pd$nodes$angle[root] <- 0.  # arbitrary
   pd$nodes$x = 0;  # map to origin
   pd$nodes$y = 0;
   
-  # preorder traversal
-  last.start <- 0.
-  for (i in 1:nrow(pd$edges)) {
-    e <- pd$edges[i,]
-    parent <- pd$nodes[e$parent, ]
-    child <- pd$nodes[e$child, ]
+  pd <- .recursive.equalAngles(root, pd)
+  
+  # map node coordinates to edges
+  pd$edges$x0 <- pd$nodes$x[pd$edges$parent]
+  pd$edges$x1 <- pd$nodes$x[pd$edges$child]
+  pd$edges$y0 <- pd$nodes$y[pd$edges$parent]  
+  pd$edges$y1 <- pd$nodes$y[pd$edges$child]  
+  
+  class(pd) <- c('phyloLayout', 'phyloData')
+  pd$layout <- 'equal.angle'
+  pd$index <- index
+  
+  pd
+}
+
+
+.recursive.equalAngles <- function(index, pd) {
+  edges <- pd$edges
+  node <- pd$nodes[index, ]
+  
+  last.start <- node$start
+  children <- edges$child[edges$parent==index]
+  for (i in children) {
+    child <- pd$nodes[i, ]
     
-    # assign proportion of parent's arc to child
-    arc <- (parent$end - parent$start) * child$n.tips/parent$n.tips
+    # assign proportion of arc to this child
+    arc <- (node$end - node$start) * max(child$n.tips, 1)/node$n.tips
     child$start <- last.start
     child$end <- child$start + arc
     
+    # bisect the arc
+    child$angle <- child$start + (child$end - child$start)/2.
+    last.start <- child$end
+    
+    # map to x,y coordinates
+    child$x <- node$x + child$r * sin(child$angle*pi)
+    child$y <- node$y + child$r * cos(child$angle*pi)
+    
+    # save to data frame
+    pd$nodes[i, ] <- child
+    
+    # climb up tree
+    pd <- .recursive.equalAngles(i, pd)
   }
+  
+  return(pd)
 }
 
 
@@ -344,10 +373,13 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
   }
   
   if (is.element(obj$layout, c('slanted', 'rectangular'))) {
-    if (is.na(mar)) {
+    if (any(is.na(mar))) {
       # default margins for rectangular layouts
       par(mar=c(2,1,1,5))
+    } else {
+      par(mar=mar)
     }
+    
     # prepare the plot region
     plot(NA, xlim=c(0, max(obj$nodes$x)), ylim=c(0, max(obj$nodes$y)+1),
          main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
@@ -397,6 +429,46 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
     
     segments(obj$edges$x0, obj$edges$y0, obj$edges$x1, obj$edges$y1)
   }
+  
+  ##############################################
+  
+  else if (obj$layout == 'equal.angle') {
+    if (any(is.na(mar))) {
+      # default for unrooted layout
+      par(mar=rep(2, 4))
+    } else {
+      par(mar=mar)
+    }
+    
+    plot(NA, xlim=range(obj$nodes$x), ylim=range(obj$nodes$y),
+         main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
+    
+    segments(x0=obj$edges$x0, y0=obj$edges$y0, 
+             x1=obj$edges$x1, y1=obj$edges$y1,
+             lwd=lwd, col=col)
+  
+    # node labeling
+    if (label != 'n') {
+      par(xpd=NA)
+      if (is.element(label, c('t', 'b'))) {
+        # draw tip labels
+        tips <- obj$nodes[obj$nodes$n.tips==0, ]
+        for (i in 1:nrow(tips)) {
+          tip <- tips[i, ]
+          text(x=tip$x, y=tip$y, labels=tip$label, 
+               srt=tip$angle*180,  # radians to degrees
+               adj=0, cex=cex.lab)
+        }
+      }
+      if (is.element(label, c('i', 'b'))) {
+        # draw internal labels
+        internals <- obj$nodes[obj$nodes$n.tips>0, ]
+        text(x=internals$x + x.space, y=internals$y, labels=internals$label, 
+             adj=0, cex=cex.lab)
+      }
+      par(xpd=FALSE)
+    }
+  }
 }
 
 
@@ -412,3 +484,46 @@ axis.phyloData <- function(obj, ...) {
 scale.bar <- function(obj, ...) {
   
 }
+
+
+#' unroot
+#' 
+unroot <- function(phy) {
+  # make copy to avoid altering original tree
+  obj <- phy
+  
+  # remove node and edge attributes associated with the root node
+  if (is.rooted(obj)) {
+    n.nodes <- Ntip(obj) + Nnode(obj)
+    n.edges <- nrow(obj$edge)
+    
+    root <- unique(obj$edge[,1][which(
+      !is.element(obj$edge[,1], obj$edge[,2])
+      )])
+    if (length(root) > 1) {
+      stop("Error: found multiple root nodes in tree")
+    }
+    root.edges <- which(obj$edge[,1] == root)
+    
+    default.keys <- c('tip.label', 'node.label', 'Nnode', 'edge', 'edge.length')
+    for (key in names(obj)) {
+      if (!is.element(key, default.keys)) {
+        val <- obj[[key]]
+        if (length(val) == n.nodes) {
+          # filter node attribute associated with root
+          obj[[key]] <- val[-root]
+        }
+        else if (length(val) == n.edges) {
+          # filter edge attributes associated with root
+          obj[[key]] <- val(-root.edges)
+        }
+      }
+    }
+  }
+  
+  unroot.phylo(obj)
+}
+
+
+
+
