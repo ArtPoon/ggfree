@@ -174,10 +174,6 @@ print.phyloLayout <- function(obj) {
 #' 
 #' @keywords internal
 .layout.rect <- function(phy, unscaled=FALSE, slanted=FALSE) {
-  # generate subtrees
-  subs <- subtrees(phy)
-  names(subs) <- phy$node.label
-  
   # convert phylo object to data frames
   pd <- as.phyloData(phy, unscaled)
   
@@ -187,14 +183,13 @@ print.phyloLayout <- function(obj) {
   
   # assign vertical positions to internal nodes
   internals <- pd$edges$child[!pd$edges$isTip]
-  for (i in internals) {
-    # retrieve subtree by node label
-    st <- subs[[ as.character(pd$nodes$label[i]) ]]
-    y.tips <- pd$nodes$y[which(is.element(pd$nodes$label, st$tip.label))]
-    pd$nodes$y[i] <- mean(y.tips)
+  for (i in rev(internals)) {
+    children <- pd$edges$child[pd$edges$parent==i]
+    pd$nodes$y[i] <- mean(pd$nodes$y[children])
   }
   root <- Ntip(phy)+1
-  pd$nodes$y[root] <- mean(1:Ntip(phy))
+  children <- pd$edges$child[pd$edges$parent==root]
+  pd$nodes$y[root] <- mean(pd$nodes$y[children])
 
   # map node coordinates to edges
   pd$edges$x0 <- pd$nodes$x[pd$edges$parent]
@@ -239,14 +234,13 @@ print.phyloLayout <- function(obj) {
   
   # assign angles to internal nodes
   internals <- pd$edges$child[!pd$edges$isTip]
-  for (i in internals) {
-    # retrieve subtree by node label
-    st <- subs[[ as.character(pd$nodes$label[i]) ]]
-    tip.angles <- pd$nodes$angle[which(is.element(pd$nodes$label, st$tip.label))]
-    pd$nodes$angle[i] <- mean(tip.angles)
+  for (i in rev(internals)) {
+    children <- pd$edges$child[pd$edges$parent==i]
+    pd$nodes$angle[i] <- mean(pd$nodes$angle[children])
   }
   root <- Ntip(phy)+1
-  pd$nodes$angle[root] <- 0  # arbitrary
+  children <- pd$edges$child[pd$edges$parent==root]
+  pd$nodes$angle[root] <- mean(pd$nodes$angle[children])
   
   # calculate x,y from polar coordinates
   pd$nodes$x <- pd$nodes$r * cos(pd$nodes$angle)
@@ -472,7 +466,8 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
     plot(NA, xlim=range(obj$nodes$x), ylim=range(obj$nodes$y),
          main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
     
-    segments(obj$edges$x0, obj$edges$y0, obj$edges$x1, obj$edges$y1)
+    segments(obj$edges$x0, obj$edges$y0, obj$edges$x1, obj$edges$y1,
+             lwd=lwd, col=col)
     
     temp <- split(obj$edges, obj$edges$parent)
     for (e in temp) {
@@ -480,7 +475,8 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
       parent <- obj$nodes[unique(e$parent),]
       start <- min(nodes$angle)
       end <- max(nodes$angle)
-      draw.arc(0, 0, start, end, parent$r)
+      # FIXME: how to deal with multiple values of `lwd` or `col`?
+      draw.arc(0, 0, start, end, parent$r, lwd=lwd, col=col)
     }
     
     # node labeling
