@@ -209,6 +209,41 @@ fill=pal, lwd=2, xlab='Sepal length', cex.lab=1.2)
 
 <img src="man/figures/README-unnamed-chunk-10-1.png" width="400" style="display: block; margin: auto;" />
 
+## Trees
+
+The [ggtree](https://github.com/YuLab-SMU/ggtree) package by Guangchuang
+Yu is an excellent resource for drawing information-rich visualizations
+of phylogenetic trees. (See
+<https://guangchuangyu.github.io/software/ggtree/gallery/> for a gallery
+of figures generated using `ggtree`.) `ggtree` employs the same grammar
+as `ggplot`, so writing code looks quite similar:
+
+``` r
+require(ggtree)
+set.seed(1999)
+phy <- rtree(50)
+ggtree(phy)
+```
+
+Since I am accustomed to base R, however, I find this approach
+frustrating to use and was motivated to start implementing similar plot
+functions in `ggfree`.
+
+Of course there are several other packages in R that provide plotting
+functions for phylogenetic tree objects. For example, the
+[ape](https://cran.r-project.org/web/packages/ape/index.html) package —
+which defines the `phylo` S3 object class that many packages for
+phylogenetics will accept as inputs — adapts the generic S3 `plot`
+function for trees (called `plot.phylo`). However, it is not
+straight-forward to annotate the resulting plot with additional
+information, such as highlighting a subset of internal nodes. This is
+because there are two things happening when we call `plot.phylo`: 1. the
+method maps the nodes and edges (branches) of the tree to the `x` and
+`y` coordinates according to one of several layout algorithms, and; 2.
+the method draws the tree on these coordinates in the active plot
+device. Consequently, the `x` and `y` coordinates are not readily
+available for the user to add additional information to the plot.
+
 ## Other works
 
   - @aronekuld’s [beeswarm](https://github.com/aroneklund/beeswarm)

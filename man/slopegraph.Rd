@@ -4,9 +4,19 @@
 \alias{slopegraph}
 \title{slopegraph}
 \usage{
-slopegraph(x, y = NA, type = "b", names.arg = NA, xlab = NA,
-  ylab = NA, colorize = F, pal = c("firebrick", "steelblue"),
-  shim = 0.5, cex.text = 0.8, ...)
+slopegraph(
+  x,
+  y = NA,
+  type = "b",
+  names.arg = NA,
+  xlab = NA,
+  ylab = NA,
+  colorize = F,
+  pal = c("firebrick", "steelblue"),
+  shim = 0.5,
+  cex.text = 0.8,
+  ...
+)
 }
 \arguments{
 \item{x:}{numeric vector of values to plot on the left}
