@@ -5,8 +5,13 @@ Version: 0.0.1
 Date: 2019-07-19
 Author: Art FY Poon
 Maintainer: Art FY Poon <apoon42@uwo.ca>
+Depends: ape
 Description: ggfree is an R package that implements methods to generate plots in the style of ggplot2 using only base R graphics.
 License: GPL-3
 Encoding: UTF-8
 RoxygenNote: 7.0.1
 LazyData: true
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
