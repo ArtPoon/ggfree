@@ -18,8 +18,9 @@ as.phyloData <- function(phy, unscaled=FALSE) {
     stop("Error: as.phyloData requires an ape:phylo object as input.")
   }
   
-  # use post-order traversal to gather related tips for layout
-  #phy2 <- reorder(phy, 'postorder')
+  if (is.null(phy$node.label)) {
+    phy$node.label <- paste("Node", 1:Nnode(phy), sep='')
+  }
   
   # convert edge attributes into data frame
   edges <- data.frame(
@@ -121,11 +122,7 @@ tree.layout <- function(phy, type='r', unscaled=FALSE) {
   if ( !is.element('phylo', class(phy)) ) {
     stop("tree.layout() requires `phy` to be an ape:phylo object.")
   }
-  # automatically generate node labels if necessary
-  if (is.null(phy$node.label)) {
-    phy$node.label <- paste("Node", 1:Nnode(phy), sep='')
-  }
-  
+
   if (type=='r') {
     # rectangular
     .layout.rect(phy, unscaled, slanted=FALSE)
@@ -220,10 +217,6 @@ print.phyloLayout <- function(obj) {
 #' @return S3 object of class `phyloLayout`
 #' @keywords internal
 .layout.radial <- function(phy, unscaled) {
-  # generate subtrees
-  subs <- subtrees(phy)
-  names(subs) <- phy$node.label
-  
   # convert phylo object to data frames
   pd <- as.phyloData(phy, unscaled)
   pd$nodes$r <- pd$nodes$x  # reassign depth to radius
@@ -293,7 +286,7 @@ print.phyloLayout <- function(obj) {
   }
 
   pd$nodes$start[root] <- 0.
-  pd$nodes$end[root] <- 2  # PI
+  pd$nodes$end[root] <- 2*pi
   pd$nodes$angle[root] <- 0.  # arbitrary
   pd$nodes$x = 0;  # map to origin
   pd$nodes$y = 0;
@@ -343,8 +336,8 @@ print.phyloLayout <- function(obj) {
     last.start <- child$end
     
     # map to x,y coordinates
-    child$x <- node$x + child$r * sin(child$angle*pi)
-    child$y <- node$y + child$r * cos(child$angle*pi)
+    child$x <- node$x + child$r * sin(child$angle)
+    child$y <- node$y + child$r * cos(child$angle)
     
     # save to data frame
     pd$nodes[i, ] <- child
@@ -374,38 +367,40 @@ print.phyloLayout <- function(obj) {
 #' preorder traversal.
 #' 
 #' @param obj:  S3 object of class `phyloLayout`
+#' @param type:  if 'n', then line segments are not drawn
 #' @param col:  colour for line segments.  Defaults to 'grey50'.
 #' @param lwd:  stroke width for line segments.  Defaults to 2.
 #' @param label:  Specifies whether nodes are labeled with text.
 #'   \itemize{
-#'     \item {'n'}{No node labels.}
-#'     \item {'t'}{Tip labels only (default).}
-#'     \item {'i'}{Internal node labels only.}
-#'     \item {'b'}{Both tip and internal node labels.}
+#'     \item{'n'}{No node labels.}
+#'     \item{'t'}{Tip labels only (default).}
+#'     \item{'i'}{Internal node labels only.}
+#'     \item{'b'}{Both tip and internal node labels.}
 #'   }
 #' @param cex.lab:  Character expansion factor for node labels (default 0.8).
 #' @param mar:  (optional) vector of margin widths (graphical parameter).
+#' @param ...:  additional graphical parameters to pass to `lines` and `label`
 #' 
 #' @examples 
 #' # generate random coalescent tree
-#' require(ape)
-#' phy <- rcoal(30)
+#' set.seed(1999); phy <- rcoal(50)
 #' 
 #' # rectangular tree
-#' plot(tree.layout(phy, type='r'), mar=c(3,1,1,5))
+#' plot(tree.layout(phy, type='r'), mar=c(3,0,0,1))
 #' axis(side=1)
 #' 
-#' # slanted tree
-#' plot(tree.layout(phy, type='s'), col=rainbow(5, v=.7), lwd=3)
+#' # unscaled slanted tree with colors
+#' pal <- colorRampPalette(c('cadetblue', 'brown'))
+#' plot(tree.layout(phy, type='s', unscaled=T), col=pal(5))
 #' 
 #' # unrooted tree
 #' plot(tree.layout(phy, type='u'))
 #' 
 #' # circular (radial) tree
-#' plot(tree.layout(phy, type='o'), label='b')
+#' plot(tree.layout(phy, type='o'), label='t')
 #' 
 #' @export
-plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8, 
+plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.lab=0.8, 
                              mar=NA, ...) {
   # check inputs
   if (!is.element('phyloLayout', class(obj))) {
@@ -416,154 +411,186 @@ plot.phyloLayout <- function(obj, col='grey50', lwd=2, label='t', cex.lab=0.8,
          "object before plotting! e.g., `layout.rect()`")
   }
   
+  # prepare the plot region
   if (is.element(obj$layout, c('slanted', 'rectangular'))) {
     if (any(is.na(mar))) {
-      # default margins for rectangular layouts
-      par(mar=c(2,1,1,5))
+      par(mar=c(2,1,1,5))  # default margins
     } else {
       par(mar=mar)
     }
-    
-    # prepare the plot region
     plot(NA, xlim=c(0, max(obj$nodes$x)), ylim=c(0, max(obj$nodes$y)+1),
          main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
-    
-    segments(x0=obj$edges$x0, y0=obj$edges$y0, 
-             x1=obj$edges$x1, y1=obj$edges$y1,
-             lwd=lwd, col=col)
-    
-    # draw vertical edges?
-    if (obj$layout=='rectangular') {
-      . <- sapply(split(obj$edges, obj$edges$parent), function(e) {
-        x0 <- e[1,]$x0
-        y0 <- min(e$y0)
-        y1 <- max(e$y0)
-        # FIXME: what if `col` is a vector?
-        segments(x0=x0, y0=y0, x1=x0, y1=y1, 
-                 lwd=ifelse(length(lwd)==1, lwd, 1), 
-                 col=col)
-      })
-    }
-    
-    # node labeling
-    if (label != 'n') {
-      par(xpd=NA)
-      if (is.element(label, c('t', 'b'))) {
-        # draw tip labels
-        tips <- obj$nodes[obj$nodes$n.tips==0, ]
-        text(x=tips$x, y=tips$y, labels=paste0(' ', tips$label), 
-             adj=0, cex=cex.lab)
-      }
-      if (is.element(label, c('i', 'b'))) {
-        # draw internal labels
-        internals <- obj$nodes[obj$nodes$n.tips>0, ]
-        text(x=internals$x, y=internals$y, labels=paste0(' ', internals$label), 
-             adj=0, cex=cex.lab)
-      }
-      par(xpd=FALSE)
-    }
   }
-  
-  ##############################################
-  
-  else if (obj$layout == 'radial') {
+  else if (obj$layout=='radial' | obj$layout == 'equal.angle') {
     if (any(is.na(mar))) {
       # default for radial layout
       par(mar=rep(2, 4))
     } else {
       par(mar=mar)
     }
-    
     plot(NA, xlim=range(obj$nodes$x), ylim=range(obj$nodes$y),
          main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
-    
-    segments(obj$edges$x0, obj$edges$y0, obj$edges$x1, obj$edges$y1,
-             lwd=lwd, col=col)
-    
-    temp <- split(obj$edges, obj$edges$parent)
+  }
+  
+  if (type != 'n') {
+    # draw line segments
+    lines(obj, col=col, lwd=lwd, ...)
+  }
+  
+  if (label != 'n') {
+    # draw node labels
+    label.phyloLayout(obj, label, cex.lab, ...)
+  }
+}
+
+
+#' lines.phyloLayout
+#' 
+#' Generic S3 method adapted for drawing the line segments that 
+#' comprise a phylogenetic tree.
+#' 
+#' @param obj:  an S3 object of class `phyloLayout`
+#' @param ...:  additional graphical parameters to pass to `segments`
+#'        and `draw.arc`
+#' 
+#' @export
+lines.phyloLayout <- function(obj, col='grey50', ...) {
+  # this applies for all layouts
+  segments(x0=obj$edges$x0, y0=obj$edges$y0, 
+           x1=obj$edges$x1, y1=obj$edges$y1, ...)
+  
+  # group edges by parent node
+  temp <- split(obj$edges, obj$edges$parent)
+  
+  # draw vertical edges for rect or radial layouts
+  if (obj$layout == 'rectangular') {
+    for (e in temp) {
+      x0 <- e[1,]$x0  # should be the same for all entries
+      y0 <- min(e$y0)
+      y1 <- max(e$y0)
+      if (length(col) == nrow(obj$edges)) {
+        pal <- col[row.names(e)]
+      }
+      
+      segments(x0=x0, y0=y0, x1=x0, y1=y1, ...)
+    }
+  }
+  else if (obj$layout == 'radial') {
     for (e in temp) {
       nodes <- obj$nodes[e$child,]
       parent <- obj$nodes[unique(e$parent),]
       start <- min(nodes$angle)
       end <- max(nodes$angle)
-      # FIXME: how to deal with multiple values of `lwd` or `col`?
-      draw.arc(0, 0, start, end, parent$r, lwd=lwd, col=col)
-    }
-    
-    # node labeling
-    if (label != 'n') {
-      par(xpd=NA)
-      if (is.element(label, c('t', 'b'))) {
-        # draw tip labels
-        tips <- obj$nodes[obj$nodes$n.tips==0, ]
-        for (i in 1:nrow(tips)) {
-          tip <- tips[i, ]
-          text(x=tip$x, y=tip$y, labels=paste0(' ', tip$label), 
-               srt=tip$angle/pi*180,  # radians to degrees
-               adj=0, cex=cex.lab)
-        }
-      }
-      if (is.element(label, c('i', 'b'))) {
-        # draw internal labels
-        internals <- obj$nodes[obj$nodes$n.tips>0, ]
-        for (i in 1:nrow(internals)) {
-          node <- internals[i, ]
-          text(x=node$x, y=node$y, labels=paste0(' ', node$label), 
-               srt=node$angle/pi*180,
-               adj=0, cex=cex.lab) 
-        }
-      }
-      par(xpd=FALSE)
-    }
-  }
-  
-  ##############################################
-  
-  else if (obj$layout == 'equal.angle') {
-    if (any(is.na(mar))) {
-      # default for unrooted layout
-      par(mar=rep(2, 4))
-    } else {
-      par(mar=mar)
-    }
-    
-    plot(NA, xlim=range(obj$nodes$x), ylim=range(obj$nodes$y),
-         main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
-    
-    segments(x0=obj$edges$x0, y0=obj$edges$y0, 
-             x1=obj$edges$x1, y1=obj$edges$y1,
-             lwd=lwd, col=col)
-  
-    # node labeling
-    if (label != 'n') {
-      par(xpd=NA)
-      if (is.element(label, c('t', 'b'))) {
-        # draw tip labels
-        tips <- obj$nodes[obj$nodes$n.tips==0, ]
-        for (i in 1:nrow(tips)) {
-          tip <- tips[i, ]
-          text(x=tip$x, y=tip$y, labels=paste0(' ', tip$label), 
-               srt=-tip$angle*180+90,  # radians to degrees
-               adj=0, cex=cex.lab)
-        }
-      }
-      if (is.element(label, c('i', 'b'))) {
-        # draw internal labels
-        internals <- obj$nodes[obj$nodes$n.tips>0, ]
-        for (i in 1:nrow(internals)) {
-          node <- internals[i, ]
-          text(x=node$x, y=node$y, labels=paste0(' ', node$label), 
-               srt=-node$angle*180+90,
-               adj=0, cex=cex.lab) 
-        }
-      }
-      par(xpd=FALSE)
+      
+      draw.arc(x=0, y=0, theta0=start, theta1=end, r0=parent$r, ...)
     }
   }
 }
 
 
-#' points.phyloData
+#' label.phyloLayout
+#' 
+#' Draw tip and/or internal node labels on the phylogenetic tree.
+#' 
+#' @param obj:  an S3 object of class `phyloLayout`
+#' @param label:  Specifies which set of nodes are labeled with text.
+#'   \itemize{
+#'     \item{'t'}{Tip labels only (default).}
+#'     \item{'i'}{Internal node labels only.}
+#'     \item{'b'}{Both tip and internal node labels.}
+#'   }
+#' @param align:  if TRUE, all tip labels are drawn at maximum value
+#' @param cex.lab:  character expansion factor for text (default 1)
+#' @param ...:  additional graphical parameters passed to `text`
+#' 
+#' @export
+label.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
+  # filter node data frame
+  tips <- obj$nodes[obj$nodes$n.tips==0, ]
+  internals <- obj$nodes[obj$nodes$n.tips>0, ]
+  
+  # allow drawing into margins of plot device
+  par(xpd=NA)
+  
+  if (obj$layout=='rectangular' | obj$layout=='slanted') {
+    if (is.element(label, c('t', 'b'))) {
+      # draw tip labels
+      x <- tips$x
+      if (align) x <- max(tips$x)
+      text(x=x, y=tips$y, labels=paste0(' ', tips$label), 
+           adj=0, cex=cex.lab, ...)
+    }
+    if (is.element(label, c('i', 'b'))) {
+      # draw internal labels
+      text(x=internals$x, y=internals$y, labels=paste0(' ', internals$label), 
+           adj=0, cex=cex.lab)
+    }
+  }
+  else if (obj$layout == 'radial' | obj$layout == 'equal.angle') {
+    if (is.element(label, c('t', 'b'))) {
+      # srt does not work for vectors
+      for (i in 1:nrow(tips)) {
+        tip <- tips[i, ]
+        
+        # equal angle layout draws zero-angle straight up
+        if (obj$layout == 'equal.angle') tip$angle <- pi/2-tip$angle
+        tip <- .rotate.label(tip)
+        
+        text(x=tip$x, y=tip$y, labels=tip$label, 
+             srt=tip$angle/pi*180, adj=0, cex=cex.lab)
+      }
+    }
+    if (is.element(label, c('i', 'b'))) {
+      # draw internal labels
+      for (i in 1:nrow(internals)) {
+        node <- internals[i, ]
+        
+        if (obj$layout == 'equal.angle') node$angle <- pi/2-node$angle
+        node <- .rotate.label(node)
+        
+        text(x=node$x, y=node$y, labels=node$label, 
+             srt=node$angle/pi*180, adj=0, cex=cex.lab) 
+      }
+    }
+  }
+
+  # revert to default trimming at margins    
+  par(xpd=FALSE)
+}
+
+
+#' .rotate.label
+#' Adjust the string rotation of node labels for unrooted
+#' or radial trees so they are not upside-down.
+#' 
+#' @param node:  named vector, a row from the nodes data frame of a 
+#'        `phyloLayout` object.
+#' @return  a named vector with updated `x`, `y`, `angle` and `label` values
+#' 
+#' @keywords internal
+.rotate.label <- function(node) {
+  h <- node$angle %% (2*pi)
+  if (h>0.5*pi && h<(1.5*pi)) {
+    # slide label outward
+    w <- strwidth(node$label, units='user')/2
+    node$x <- node$x + w*cos(node$angle)
+    node$y <- node$y + w*sin(node$angle)
+    
+    # invert the label
+    node$angle <- node$angle+pi
+    
+    # pad the label on the right
+    node$label <- paste0(node$label, ' ')
+  }
+  else {
+    # pad the label on the left
+    node$label <- paste0(' ', node$label)
+  }
+  node
+}
+
+
+#' points.phyloLayout
 #' 
 #' A generic function to add points to the plot.  This is 
 #' customized for phyloLayout S3 objects that provide the x-
@@ -661,6 +688,22 @@ unroot <- function(obj) {
   }
   
   unroot.phylo(obj)
+}
+
+
+#' image
+#' 
+#' Generic function for drawing a grid of coloured or grey-scale 
+#' rectangles corresponding to values in a matrix `z`.  Rows in 
+#' the matrix are assumed to correspond to tips of the tree.
+#' Only rectangular or slanted tree layouts are supported.  If 
+#' you want to annotate a circular (radial) layout, use `ringplot`.
+#' 
+#' @param obj:  an S3 object of class `phyloLayout`
+#' @param z:  matrix, data to annotate
+#' @param col:  a vector of colors
+image.phyloLayout <- function(obj, z, col) {
+  if 
 }
 
 

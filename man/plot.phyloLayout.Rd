@@ -4,10 +4,13 @@
 \alias{plot.phyloLayout}
 \title{plot.phyloLayout}
 \usage{
-\method{plot}{phyloLayout}(obj, col = "grey50", lwd = 2, label = "t", cex.lab = 0.8, mar = NA, ...)
+\method{plot}{phyloLayout}(obj, type = "l", col = "grey50", lwd = 2,
+  label = "t", cex.lab = 0.8, mar = NA, ...)
 }
 \arguments{
 \item{obj:}{S3 object of class `phyloLayout`}
+
+\item{type:}{if 'n', then line segments are not drawn}
 
 \item{col:}{colour for line segments.  Defaults to 'grey50'.}
 
@@ -15,15 +18,17 @@
 
 \item{label:}{Specifies whether nodes are labeled with text.
 \itemize{
-  \item {'n'}{No node labels.}
-  \item {'t'}{Tip labels only (default).}
-  \item {'i'}{Internal node labels only.}
-  \item {'b'}{Both tip and internal node labels.}
+  \item{'n'}{No node labels.}
+  \item{'t'}{Tip labels only (default).}
+  \item{'i'}{Internal node labels only.}
+  \item{'b'}{Both tip and internal node labels.}
 }}
 
 \item{cex.lab:}{Character expansion factor for node labels (default 0.8).}
 
 \item{mar:}{(optional) vector of margin widths (graphical parameter).}
+
+\item{...:}{additional graphical parameters to pass to `lines` and `label`}
 }
 \description{
 Generic plot function for phylogenetic trees with layouts generated
@@ -46,16 +51,17 @@ require(ape)
 phy <- rcoal(30)
 
 # rectangular tree
-plot(tree.layout(phy, type='r'), mar=c(3,1,1,5))
+plot(tree.layout(phy, type='r'), mar=c(2,0,0,3))
 axis(side=1)
 
 # slanted tree
-plot(tree.layout(phy, type='s'), col=rainbow(5, v=.7), lwd=3)
+pal <- colorRampPalette(c('cadetblue', 'brown'))
+plot(tree.layout(phy, type='r', unscaled=T), col=pal(5))
 
 # unrooted tree
 plot(tree.layout(phy, type='u'))
 
 # circular (radial) tree
-plot(tree.layout(phy, type='o'), label='b')
+plot(tree.layout(phy, type='o'), label='t')
 
 }
