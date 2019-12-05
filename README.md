@@ -218,7 +218,8 @@ fill=pal, lwd=2, xlab='Sepal length', cex.lab=1.2)
 ## Trees
 
 I’ve written a vignette on drawing trees with `ggfree` under the package
-directory `vignettes/ggfree-trees.html`.
+directory
+[vignettes/ggfree-trees.html](https://github.com/ArtPoon/ggfree/blob/master/vignettes/ggfree-trees.md).
 
 ## Other works
 
