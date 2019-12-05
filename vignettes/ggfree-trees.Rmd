@@ -1,6 +1,6 @@
 ---
 title: "Plotting trees with ggfree"
-output: rmarkdown::html_document
+output: github_document
 vignette: >
   %\VignetteIndexEntry{ggfree-trees}
   %\VignetteEngine{knitr::rmarkdown}
