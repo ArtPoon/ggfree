@@ -47,16 +47,15 @@ preorder traversal.
 }
 \examples{
 # generate random coalescent tree
-require(ape)
-phy <- rcoal(30)
+set.seed(1999); phy <- rcoal(50)
 
 # rectangular tree
-plot(tree.layout(phy, type='r'), mar=c(2,0,0,3))
+plot(tree.layout(phy, type='r'), mar=c(3,0,0,1))
 axis(side=1)
 
-# slanted tree
+# unscaled slanted tree with colors
 pal <- colorRampPalette(c('cadetblue', 'brown'))
-plot(tree.layout(phy, type='r', unscaled=T), col=pal(5))
+plot(tree.layout(phy, type='s', unscaled=T), col=pal(5))
 
 # unrooted tree
 plot(tree.layout(phy, type='u'))

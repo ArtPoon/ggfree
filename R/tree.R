@@ -439,7 +439,7 @@ plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.
   
   if (label != 'n') {
     # draw node labels
-    label.phyloLayout(obj, label, cex.lab, ...)
+    text.phyloLayout(obj, label, cex.lab, ...)
   }
 }
 
@@ -450,45 +450,63 @@ plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.
 #' comprise a phylogenetic tree.
 #' 
 #' @param obj:  an S3 object of class `phyloLayout`
+#' @param col:  if a colour vector is specified, `lines` will apply
+#'        the colors in the same order as edges in the data frame 
+#'        in `obj`.  If the vector is too short, it will recycle colors.
+#' @param shade:  if TRUE (default), vertical edges will be coloured 
+#'        by the average of descendant horizonatal edges.  If FALSE,
+#'        vertical edges are uniformly coloured grey.
 #' @param ...:  additional graphical parameters to pass to `segments`
 #'        and `draw.arc`
 #' 
 #' @export
-lines.phyloLayout <- function(obj, col='grey50', ...) {
+lines.phyloLayout <- function(obj, col='grey50', shade=TRUE, ...) {
+  if (length(col) < nrow(obj$edges)) {
+    # recycle colours if necessary
+    col <- rep(col, length.out=nrow(obj$edges))
+  }
+  
   # this applies for all layouts
   segments(x0=obj$edges$x0, y0=obj$edges$y0, 
-           x1=obj$edges$x1, y1=obj$edges$y1, ...)
+           x1=obj$edges$x1, y1=obj$edges$y1, col=col, ...)
   
   # group edges by parent node
   temp <- split(obj$edges, obj$edges$parent)
   
   # draw vertical edges for rect or radial layouts
-  if (obj$layout == 'rectangular') {
-    for (e in temp) {
+  for (e in temp) {
+    
+    # determine edge color
+    if (shade) {
+      pal <- col[as.integer(row.names(e))]
+      this.col <- blend.colors(pal)
+    }
+    else {
+      this.col <- 'grey50'
+    }
+    
+    if (obj$layout == 'rectangular') {
+      
       x0 <- e[1,]$x0  # should be the same for all entries
       y0 <- min(e$y0)
       y1 <- max(e$y0)
-      if (length(col) == nrow(obj$edges)) {
-        pal <- col[row.names(e)]
-      }
-      
-      segments(x0=x0, y0=y0, x1=x0, y1=y1, ...)
+
+      segments(x0=x0, y0=y0, x1=x0, y1=y1, col=this.col, ...)
     }
-  }
-  else if (obj$layout == 'radial') {
-    for (e in temp) {
+    else if (obj$layout == 'radial') {
       nodes <- obj$nodes[e$child,]
       parent <- obj$nodes[unique(e$parent),]
       start <- min(nodes$angle)
       end <- max(nodes$angle)
-      
-      draw.arc(x=0, y=0, theta0=start, theta1=end, r0=parent$r, ...)
+        
+      draw.arc(x=0, y=0, theta0=start, theta1=end, r0=parent$r, 
+               col=this.col, ...)
     }
   }
 }
 
 
-#' label.phyloLayout
+#' text.phyloLayout
 #' 
 #' Draw tip and/or internal node labels on the phylogenetic tree.
 #' 
@@ -500,11 +518,12 @@ lines.phyloLayout <- function(obj, col='grey50', ...) {
 #'     \item{'b'}{Both tip and internal node labels.}
 #'   }
 #' @param align:  if TRUE, all tip labels are drawn at maximum value
-#' @param cex.lab:  character expansion factor for text (default 1)
+#' @param cex.lab:  character expansion factor for text
 #' @param ...:  additional graphical parameters passed to `text`
 #' 
 #' @export
-label.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
+text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
+  
   # filter node data frame
   tips <- obj$nodes[obj$nodes$n.tips==0, ]
   internals <- obj$nodes[obj$nodes$n.tips>0, ]
@@ -523,7 +542,7 @@ label.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
     if (is.element(label, c('i', 'b'))) {
       # draw internal labels
       text(x=internals$x, y=internals$y, labels=paste0(' ', internals$label), 
-           adj=0, cex=cex.lab)
+           adj=0, cex=cex.lab, ...)
     }
   }
   else if (obj$layout == 'radial' | obj$layout == 'equal.angle') {
@@ -537,7 +556,7 @@ label.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
         tip <- .rotate.label(tip)
         
         text(x=tip$x, y=tip$y, labels=tip$label, 
-             srt=tip$angle/pi*180, adj=0, cex=cex.lab)
+             srt=tip$angle/pi*180, adj=0, cex=cex.lab, ...)
       }
     }
     if (is.element(label, c('i', 'b'))) {
@@ -549,7 +568,7 @@ label.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
         node <- .rotate.label(node)
         
         text(x=node$x, y=node$y, labels=node$label, 
-             srt=node$angle/pi*180, adj=0, cex=cex.lab) 
+             srt=node$angle/pi*180, adj=0, cex=cex.lab, ...) 
       }
     }
   }
@@ -703,7 +722,7 @@ unroot <- function(obj) {
 #' @param z:  matrix, data to annotate
 #' @param col:  a vector of colors
 image.phyloLayout <- function(obj, z, col) {
-  if 
+  stop("work in progress")
 }
 
 

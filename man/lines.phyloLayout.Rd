@@ -4,10 +4,18 @@
 \alias{lines.phyloLayout}
 \title{lines.phyloLayout}
 \usage{
-\method{lines}{phyloLayout}(obj, ...)
+\method{lines}{phyloLayout}(obj, col = "grey50", shade = TRUE, ...)
 }
 \arguments{
 \item{obj:}{an S3 object of class `phyloLayout`}
+
+\item{col:}{if a colour vector is specified, `lines` will apply
+the colors in the same order as edges in the data frame 
+in `obj`.  If the vector is too short, it will recycle colors.}
+
+\item{shade:}{if TRUE (default), vertical edges will be coloured 
+by the average of descendant horizonatal edges.  If FALSE,
+vertical edges are uniformly coloured grey.}
 
 \item{...:}{additional graphical parameters to pass to `segments`
 and `draw.arc`}

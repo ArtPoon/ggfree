@@ -66,8 +66,25 @@ add.grid <- function(mode='xy', fg.col='white', bg.col='ivory2',
 add.alpha <- function(col, alpha) {
   sapply(col, function(cl) {
     vals <- col2rgb(cl)  # convert colour to RGB values
-    rgb(vals[1], vals[2], vals[3], alpha*255, maxColorValue=255)
+    rgb(vals[1], vals[2], vals[3], maxColorValue=255)
   })
+}
+
+
+#' blend.colors
+#' 
+#' Average a vector of colours in RGBA colour space.
+#' @examples 
+#' blend.colors(c('red', 'blue', 'green'))
+#'
+#' @param col:  a vector of named or hexadecimal color specifications
+#' @return a hex color string, including an alpha channel
+#' 
+#' @export
+blend.colors <- function(col) {
+  m <- col2rgb(col, alpha=TRUE)
+  vals <- apply(m, 1, mean)
+  rgb(vals[1], vals[2], vals[3], vals[4], maxColorValue=255)
 }
 
 
