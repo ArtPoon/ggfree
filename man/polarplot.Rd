@@ -4,19 +4,9 @@
 \alias{polarplot}
 \title{polarplot}
 \usage{
-polarplot(
-  obj,
-  x = 0,
-  y = 0,
-  r = 0,
-  theta = 0.5 * pi,
-  space = 0,
-  col = NA,
-  use.names = FALSE,
-  pad.names = 0.05,
-  cex.names = 0.8,
-  ...
-)
+polarplot(obj, x = 0, y = 0, r = 0, theta = 0.5 * pi, space = 0,
+  col = NA, use.names = FALSE, pad.names = 0.05, cex.names = 0.8,
+  ...)
 }
 \arguments{
 \item{obj:}{a numeric vector, matrix or table of frequency data}

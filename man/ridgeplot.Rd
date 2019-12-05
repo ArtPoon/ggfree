@@ -4,24 +4,10 @@
 \alias{ridgeplot}
 \title{ridgeplot}
 \usage{
-ridgeplot(
-  x,
-  xlim = NA,
-  labels = NA,
-  yaxt = "s",
-  xlab = NA,
-  ylab = NA,
-  step = 0.2,
-  col = NA,
-  fill = NA,
-  lwd = 1,
-  density.args = list(),
-  add.grid = F,
-  grid.args = list(),
-  extend.lines = TRUE,
-  add = FALSE,
-  ...
-)
+ridgeplot(x, xlim = NA, labels = NA, yaxt = "s", xlab = NA,
+  ylab = NA, step = 0.2, col = NA, fill = NA, lwd = 1,
+  density.args = list(), add.grid = F, grid.args = list(),
+  extend.lines = TRUE, add = FALSE, ...)
 }
 \arguments{
 \item{x:}{a list of numeric vectors, such as produced by calling split().}

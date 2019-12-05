@@ -2,7 +2,7 @@
 % Please edit documentation in R/tree.R
 \name{points.phyloLayout}
 \alias{points.phyloLayout}
-\title{points.phyloData}
+\title{points.phyloLayout}
 \usage{
 \method{points}{phyloLayout}(obj, ...)
 }
