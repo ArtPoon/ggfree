@@ -66,7 +66,7 @@ add.grid <- function(mode='xy', fg.col='white', bg.col='ivory2',
 add.alpha <- function(col, alpha) {
   sapply(col, function(cl) {
     vals <- col2rgb(cl)  # convert colour to RGB values
-    rgb(vals[1], vals[2], vals[3], maxColorValue=255)
+    rgb(vals[1], vals[2], vals[3], alpha*255, maxColorValue=255)
   })
 }
 

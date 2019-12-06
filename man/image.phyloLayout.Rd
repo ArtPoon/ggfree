@@ -4,14 +4,23 @@
 \alias{image.phyloLayout}
 \title{image}
 \usage{
-\method{image}{phyloLayout}(obj, z, col)
+\method{image}{phyloLayout}(obj, z, xlim, col = NA, border = "white",
+  xaxt = "y", ...)
 }
 \arguments{
 \item{obj:}{an S3 object of class `phyloLayout`}
 
 \item{z:}{matrix, data to annotate}
 
-\item{col:}{a vector of colors}
+\item{xlim:}{horizontal range of grid relative to current plot device.
+Note this function will call `xpd=NA` to permit drawing 
+in margins.}
+
+\item{col:}{a vector of colours that maps to factor levels in `z`}
+
+\item{border:}{colour for border of rectangles in grid}
+
+\item{xaxt:}{if 'n', suppress drawing of axis and labels}
 }
 \description{
 Generic function for drawing a grid of coloured or grey-scale 

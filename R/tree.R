@@ -434,12 +434,16 @@ plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.
   
   if (type != 'n') {
     # draw line segments
-    lines(obj, col=col, lwd=lwd, ...)
+    suppressWarnings({
+      lines(obj, col=col, lwd=lwd, ...)  
+    })
   }
   
   if (label != 'n') {
     # draw node labels
-    text.phyloLayout(obj, label, cex.lab, ...)
+    suppressWarnings({
+      text.phyloLayout(obj, label=label, cex.lab=cex.lab, ...)
+    })
   }
 }
 
@@ -535,7 +539,7 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
     if (is.element(label, c('t', 'b'))) {
       # draw tip labels
       x <- tips$x
-      if (align) x <- max(tips$x)
+      if (align) { x <- max(tips$x) }
       text(x=x, y=tips$y, labels=paste0(' ', tips$label), 
            adj=0, cex=cex.lab, ...)
     }
@@ -553,7 +557,7 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
         
         # equal angle layout draws zero-angle straight up
         if (obj$layout == 'equal.angle') tip$angle <- pi/2-tip$angle
-        tip <- .rotate.label(tip)
+        tip <- .rotate.label(tip, cex.lab)
         
         text(x=tip$x, y=tip$y, labels=tip$label, 
              srt=tip$angle/pi*180, adj=0, cex=cex.lab, ...)
@@ -565,7 +569,7 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
         node <- internals[i, ]
         
         if (obj$layout == 'equal.angle') node$angle <- pi/2-node$angle
-        node <- .rotate.label(node)
+        node <- .rotate.label(node, cex.lab)
         
         text(x=node$x, y=node$y, labels=node$label, 
              srt=node$angle/pi*180, adj=0, cex=cex.lab, ...) 
@@ -587,11 +591,11 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
 #' @return  a named vector with updated `x`, `y`, `angle` and `label` values
 #' 
 #' @keywords internal
-.rotate.label <- function(node) {
+.rotate.label <- function(node, cex.lab) {
   h <- node$angle %% (2*pi)
   if (h>0.5*pi && h<(1.5*pi)) {
     # slide label outward
-    w <- strwidth(node$label, units='user')/2
+    w <- strwidth(node$label, units='user') * cex.lab
     node$x <- node$x + w*cos(node$angle)
     node$y <- node$y + w*sin(node$angle)
     
@@ -664,8 +668,10 @@ add.scalebar <- function(obj, len=1, x0=NA, y0=NA, lwd=2, ...) {
   } else {
     x1 <- x0+len
   }
-  segments(x0, y0, x1, lwd=lwd, ...)
-  text(x=mean(c(x0, x1)), y=y0-.7, label=len, ...)
+  suppressWarnings({
+    segments(x0, y0, x1, lwd=lwd, ...)
+    text(x=mean(c(x0, x1)), y=y0-.7, label=len, ...)
+  })
 }
 
 
@@ -710,6 +716,30 @@ unroot <- function(obj) {
 }
 
 
+#' draw.guidelines
+#' 
+#' Draws segments from the tips of the tree out to the furthest
+#' tip label.  This should only be used in conjunction with 
+#' text.phyloLayout(align=TRUE), or else the segments will be drawn
+#' over the tip labels.
+#' 
+#' @param obj:  S3 object of class `phyloLayout`
+#' @param lty:  line style, defaults to 3 (dotted)
+#' @param ...:  other graphical parameters to pass to `segments`,
+#'        such as `col` or `lwd`
+#'        
+#' @export
+draw.guidelines <- function(obj, lty=3, ...) {
+  # right ends of terminal edges
+  x0 <- obj$edges$x1[obj$edges$isTip]
+  y0 <- obj$edges$y0[obj$edges$isTip]
+  
+  # map colours from edges to nodes
+  index <- obj$edges$child[obj$edges$isTip]
+  suppressWarnings(segments(x0=x0, x1=max(x0), y0=y0, lty=lty, ...))
+}
+
+
 #' image
 #' 
 #' Generic function for drawing a grid of coloured or grey-scale 
@@ -720,9 +750,60 @@ unroot <- function(obj) {
 #' 
 #' @param obj:  an S3 object of class `phyloLayout`
 #' @param z:  matrix, data to annotate
-#' @param col:  a vector of colors
-image.phyloLayout <- function(obj, z, col) {
-  stop("work in progress")
+#' @param xlim:  horizontal range of grid relative to current plot device.
+#'        Note this function will call `xpd=NA` to permit drawing 
+#'        in margins.
+#' @param col:  a vector of colours that maps to factor levels in `z`
+#' @param border:  colour for border of rectangles in grid
+#' @param xaxt:  if 'n', suppress drawing of axis and labels
+#' 
+#' @export
+image.phyloLayout <- function(obj, z, xlim, col=NA, border='white', xaxt='y', ...) {
+  
+  # recode contents of `z` as integer-valued matrix
+  z <- apply(z, 2, function(x) as.integer(as.factor(x)))
+  
+  # use default colors if not specified by user
+  if (any(is.na(col))) {
+    col <- colorRampPalette(c('firebrick', 'dodgerblue'))(max(z, na.rm=T))
+  }
+  
+  tips <- obj$edges[obj$edges$isTip, ]
+  
+  # check that z has the expected dimensions
+  if (nrow(z) != nrow(tips)) {
+    stop("Number of rows in matrix `z` does not match number of tips ",
+         "in `phyloLayout` object: ", nrow(z), "!=", nrow(tips))
+  }
+  y <- tips$y1
+  x <- seq(xlim[1], xlim[2], length.out=ncol(z)+1)
+  dx <- (x[2]-x[1])/2
+  
+  par(xpd=NA)
+  offset <- max(tips$x1) + max(strwidth(obj$nodes$label))
+  
+  for (j in 1:ncol(z)) {
+    for (i in 1:nrow(z)) {
+      val <- z[i,j]
+      if (is.na(val)) next
+      rect(xleft = x[j], xright = x[j+1], 
+           ybottom = y[i]-0.5, ytop = y[i]+0.5,
+           border = border, col = col[val])
+    }
+  }
+  
+  # draw axis (override masking of labels)
+  if (xaxt != 'n') {
+    odds <- seq(1, ncol(z), 2)
+    evens <- odds+1
+    suppressWarnings({
+      axis(side=1, at=x[1:ncol(z)]+dx, labels=NA, ...)
+      axis(side=1, at=x[odds]+dx, labels=names(geno)[odds], lwd=0, ...)
+      axis(side=1, at=x[evens]+dx, labels=names(geno)[evens], lwd=0, ...)
+    })
+  }
+
+  par(xpd=FALSE)
 }
 
 
