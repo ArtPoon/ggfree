@@ -247,7 +247,8 @@ approach to that taken by the plot functions in the `ape` package, which
 otherwise yields the same basic plots shown above.
 
 So what’s the point? Now that we have the layout data, we have the
-freedom to make any customizations we want to the tree visualization.
+freedom to add any customization we can think of to the tree
+visualization.
 
 ### Annotating trees
 
