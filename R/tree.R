@@ -574,7 +574,7 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, .
         node <- internals[i, ]
         
         if (obj$layout == 'equal.angle') node$angle <- pi/2-node$angle
-        node <- .rotate.label(node, cex.lab)
+        node <- .rotate.label(node, offset)
         
         text(x=node$x, y=node$y, labels=node$label, 
              srt=node$angle/pi*180, adj=as.integer(node$rotated), 
