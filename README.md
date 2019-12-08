@@ -250,7 +250,7 @@ So what’s the point? Now that we have the layout data, we have the
 freedom to add any customization we can think of to the tree
 visualization.
 
-### Annotating trees
+### Flu example
 
 Here is the source code to reproduce one of the example figures from the
 `ggtree` [application note](https://doi.org/10.1111/2041-210X.12628):
@@ -295,6 +295,40 @@ image(L, geno[index, ], xlim=c(30, 37), col=col, cex.axis=0.75, line=-2)
 
 Note that most of the functions being used here are generic S3 methods
 in base R (namely, `plot`, `text`, `lines`, `points` and `image`).
+
+### Birds example
+
+Here is code for decorating a phylogeny of bird families with the
+numbers of species:
+
+``` r
+data(bird.families)
+
+# taxonomic info from BirdLife International
+path <- system.file("extdata/birdlife.csv", package='ggfree')
+birds <- read.csv(path, row.names=1)
+
+# some entries are missing
+missing <- data.frame(
+  Family=c("Dendrocygnidae", "Bucorvidae", "Rhinopomastidae", "Dacelonidae", "Cerylidae", "Centropidae", "Coccyzidae", "Crotophagidae", "Neomorphidae", "Batrachostomidae", "Eurostopodidae", "Chionididae", "Eopsaltriidae"),
+  Count=c(8, 2, 3, 70, 9, 10, 13, 4, 6, 5, 3, 2, 44)
+)
+birds <- rbind(birds, missing)
+
+# map information to tree
+index <- match(bird.families$tip.label, birds$Family)
+
+require(RColorBrewer)
+pal <- brewer.pal(9, 'Blues')[2:9]
+bins <- as.integer(cut(log(birds$Count[index]), breaks=8))
+
+# draw the tree, offsetting the labels for our image
+L <- tree.layout(bird.families, type='o')
+plot(L, cex.lab=0.7, offset=2, mar=rep(5,4), col='chocolate')
+image(L, z=as.matrix(bins), xlim=c(28.5,30), col=pal)
+```
+
+<img src="man/figures/README-unnamed-chunk-15-1.png" width="80%" style="display: block; margin: auto;" />
 
 ## Other works
 
