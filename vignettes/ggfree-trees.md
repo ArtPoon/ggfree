@@ -307,12 +307,72 @@ uninformative\!).
 ## Example: a bird tree
 
 The `ape` package has several examples of phylogenetic trees that
-relates birds at different taxonomic levels:
+relates birds at different taxonomic levels. I’m going to use one that
+relates birds at the level of families.
 
 ``` r
 # load the example tree
 data("bird.families")
-plot(tree.layout(bird.families))
+plot(tree.layout(bird.families, type='o'), cex.lab=0.8)
 ```
 
-<img src="man/figures/README-unnamed-chunk-11-1.png" width="400" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-11-1.png" width="50%" style="display: block; margin: auto;" />
+
+I’d like to annotate this tree with the number of named species per
+family. Since these data are not provided with this tree object, I had
+to search around for some supplementary data. I settled on the dataset
+published by the non-governmental conservation organization [BirdLife
+International](http://datazone.birdlife.org/home), where I retrieved the
+ZIP archive including an Excel spreadsheet that I converted to a CSV and
+processed in R. The resulting data frame covers substantially more bird
+families than our phylogeny:
+
+``` r
+path <- system.file("extdata/birdlife.csv", package='ggfree')
+birds <- read.csv(path, row.names=1)
+head(birds)
+#>            Family Count
+#> 1 Acanthisittidae     4
+#> 2    Acanthizidae    72
+#> 3    Accipitridae   295
+#> 4  Acrocephalidae    76
+#> 5    Aegithalidae    17
+#> 6    Aegithinidae     4
+nrow(birds)
+#> [1] 243
+```
+
+Let’s try to match up family names:
+
+``` r
+index <- match(bird.families$tip.label, birds$Family)
+# some family names failed to match
+bird.families$tip.label[is.na(index)]
+#>  [1] "Dendrocygnidae"   "Bucorvidae"       "Rhinopomastidae"  "Dacelonidae"     
+#>  [5] "Cerylidae"        "Centropidae"      "Coccyzidae"       "Crotophagidae"   
+#>  [9] "Neomorphidae"     "Batrachostomidae" "Eurostopodidae"   "Chionididae"     
+#> [13] "Eopsaltriidae"
+# There's only 13 of these missing, so I'm willing to manually restore them.
+# I *think* Dacelonidae is the tree kingfishers subfamily...
+missing <- data.frame(
+  Family=c("Dendrocygnidae", "Bucorvidae", "Rhinopomastidae", "Dacelonidae", "Cerylidae", "Centropidae", "Coccyzidae", "Crotophagidae", "Neomorphidae", "Batrachostomidae", "Eurostopodidae", "Chionididae", "Eopsaltriidae"),
+  Count=c(8, 2, 3, 70, 9, 10, 13, 4, 6, 5, 3, 2, 44)
+)
+birds <- rbind(birds, missing)
+index <- match(bird.families$tip.label, birds$Family)
+```
+
+Now we’re ready to use this information to annotate the tree:
+
+``` r
+# the count distribution is more even if we do a log-transform
+bins <- as.integer(cut(log(birds$Count[index]), breaks=8))
+require(RColorBrewer)
+pal <- brewer.pal(9, 'Blues')[2:9]
+
+L <- tree.layout(bird.families, type='o')
+plot(L, cex.lab=0.7, offset=2, mar=rep(5,4), col='chocolate')
+image(L, z=as.matrix(bins), xlim=c(28.5,30), col=pal)
+```
+
+<img src="man/figures/README-unnamed-chunk-14-1.png" width="100%" style="display: block; margin: auto;" />
