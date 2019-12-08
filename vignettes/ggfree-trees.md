@@ -298,16 +298,6 @@ image(L, geno, xlim=c(30, 37), col=col, cex.axis=0.75, line=-2)
 
 <img src="man/figures/README-unnamed-chunk-10-1.png" width="80%" style="display: block; margin: auto;" />
 
-``` r
-
-L <- tree.layout(flu, type='o', unscaled=T)
-par(mar=c(2,2,2,2))
-plot(L, label='n')
-image(L, geno, xlim=c(1,2), col=col)
-```
-
-<img src="man/figures/README-unnamed-chunk-10-2.png" width="80%" style="display: block; margin: auto;" />
-
 This end result is pretty similar to the `ggtree` example (Figure 5 from
 [this paper](https://doi.org/10.1111/2041-210X.12628)), except that
 we’re not embedding small images and not annotating the internal nodes
@@ -316,18 +306,13 @@ uninformative\!).
 
 ## Example: a bird tree
 
-The `ape` package has a phylogenetic tree example that relates bird
-species:
+The `ape` package has several examples of phylogenetic trees that
+relates birds at different taxonomic levels:
 
 ``` r
 # load the example tree
-data("chiroptera")
-chiroptera
-#> 
-#> Phylogenetic tree with 916 tips and 429 internal nodes.
-#> 
-#> Tip labels:
-#>  Paranyctimene_raptor, Nyctimene_aello, Nyctimene_celaeno, Nyctimene_certans, Nyctimene_cyclotis, Nyctimene_major, ...
-#> 
-#> Rooted; no branch lengths.
+data("bird.families")
+plot(tree.layout(bird.families))
 ```
+
+<img src="man/figures/README-unnamed-chunk-11-1.png" width="400" style="display: block; margin: auto;" />

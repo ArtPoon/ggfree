@@ -235,11 +235,11 @@ This end result is pretty similar to the `ggtree` example (Figure 5 from [this p
 
 ## Example: a bird tree
 
-The `ape` package has a phylogenetic tree example that relates bird species:
+The `ape` package has several examples of phylogenetic trees that relates birds at different taxonomic levels:
 ```{r}
 # load the example tree
-data("chiroptera")
-chiroptera
+data("bird.families")
+plot(tree.layout(bird.families, type='o'))
 ```
 
 

@@ -530,7 +530,7 @@ lines.phyloLayout <- function(obj, col='grey50', shade=TRUE, ...) {
 #' @param ...:  additional graphical parameters passed to `text`
 #' 
 #' @export
-text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
+text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, ...) {
   
   # filter node data frame
   tips <- obj$nodes[obj$nodes$n.tips==0, ]
@@ -542,8 +542,8 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
   if (obj$layout=='rectangular' | obj$layout=='slanted') {
     if (is.element(label, c('t', 'b'))) {
       # draw tip labels
-      x <- tips$x
-      if (align) { x <- max(tips$x) }
+      x <- tips$x + offset
+      if (align) { x <- max(tips$x) + offset }
       text(x=x, y=tips$y, labels=paste0(' ', tips$label), 
            adj=0, cex=cex.lab, ...)
     }
@@ -561,7 +561,7 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
         
         # equal angle layout draws zero-angle straight up
         if (obj$layout == 'equal.angle') tip$angle <- pi/2-tip$angle
-        tip <- .rotate.label(tip, cex.lab)
+        tip <- .rotate.label(tip, offset)
         
         text(x=tip$x, y=tip$y, labels=tip$label, 
              srt=tip$angle/pi*180, adj=as.integer(tip$rotated), 
@@ -594,20 +594,20 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
 #' 
 #' @param node:  named vector, a row from the nodes data frame of a 
 #'        `phyloLayout` object.
+#' @param offset:  amount to push label outward from origin
+#' 
 #' @return  a named vector with updated `x`, `y`, `angle` and `label` values
 #' 
 #' @keywords internal
-.rotate.label <- function(node, cex.lab) {
+.rotate.label <- function(node, offset) {
+  # slide label outward
+  node$x <- node$x + offset*cos(node$angle)
+  node$y <- node$y + offset*sin(node$angle)
+  
   h <- node$angle %% (2*pi)
   if (h>0.5*pi && h<(1.5*pi)) {
-    # slide label outward
-    #w <- strwidth(node$label, units='user') * cex.lab
-    #node$x <- node$x + w*cos(node$angle)
-    #node$y <- node$y + w*sin(node$angle)
-    
     # invert the label
     node$angle <- node$angle+pi
-    
     # pad the label on the right
     node$label <- paste0(node$label, ' ')
     node$rotated <- TRUE
