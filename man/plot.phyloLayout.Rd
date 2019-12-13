@@ -4,8 +4,16 @@
 \alias{plot.phyloLayout}
 \title{plot.phyloLayout}
 \usage{
-\method{plot}{phyloLayout}(obj, type = "l", col = "grey50", lwd = 2,
-  label = "t", cex.lab = 0.8, mar = NA, ...)
+\method{plot}{phyloLayout}(
+  obj,
+  type = "l",
+  col = "grey50",
+  lwd = 2,
+  label = "t",
+  cex.lab = 0.8,
+  mar = NA,
+  ...
+)
 }
 \arguments{
 \item{obj:}{S3 object of class `phyloLayout`}

@@ -6,7 +6,7 @@
 Adjust the string rotation of node labels for unrooted
 or radial trees so they are not upside-down.}
 \usage{
-.rotate.label(node)
+.rotate.label(node, cex.lab)
 }
 \arguments{
 \item{node:}{named vector, a row from the nodes data frame of a 

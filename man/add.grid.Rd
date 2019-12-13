@@ -4,8 +4,14 @@
 \alias{add.grid}
 \title{add.grid}
 \usage{
-add.grid(mode = "xy", fg.col = "white", bg.col = "ivory2",
-  lwd.major = 3, lwd.minor = 1, bty = "o")
+add.grid(
+  mode = "xy",
+  fg.col = "white",
+  bg.col = "ivory2",
+  lwd.major = 3,
+  lwd.minor = 1,
+  bty = "o"
+)
 }
 \arguments{
 \item{mode:}{'xy' displays both horizontal and vertical lines, 'x' horizontal only

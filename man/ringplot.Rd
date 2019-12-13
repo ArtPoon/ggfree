@@ -4,8 +4,20 @@
 \alias{ringplot}
 \title{ringplot}
 \usage{
-ringplot(vec, r0, r1, theta = pi/2, x = NA, y = NA, col = NA,
-  use.names = F, offset = 1, srt = 0, cex.label = 0.8, ...)
+ringplot(
+  vec,
+  r0,
+  r1,
+  theta = pi/2,
+  x = NA,
+  y = NA,
+  col = NA,
+  use.names = F,
+  offset = 1,
+  srt = 0,
+  cex.label = 0.8,
+  ...
+)
 }
 \arguments{
 \item{vec:}{a numeric vector containing data for plotting}

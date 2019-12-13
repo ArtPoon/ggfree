@@ -4,8 +4,7 @@
 \alias{image.phyloLayout}
 \title{image}
 \usage{
-\method{image}{phyloLayout}(obj, z, xlim, col = NA, border = "white",
-  xaxt = "y", ...)
+\method{image}{phyloLayout}(obj, z, xlim, col = NA, border = "white", xaxt = "y", ...)
 }
 \arguments{
 \item{obj:}{an S3 object of class `phyloLayout`}
