@@ -21,6 +21,10 @@ as.phyloData <- function(phy, unscaled=FALSE) {
   if (is.null(phy$node.label)) {
     phy$node.label <- paste("Node", 1:Nnode(phy), sep='')
   }
+  if (is.null(phy$edge.length)) {
+    unscaled <- TRUE
+    phy$edge.length <- rep(NA, nrow(phy$edge))
+  }
   
   # convert edge attributes into data frame
   edges <- data.frame(
@@ -526,7 +530,7 @@ lines.phyloLayout <- function(obj, col='grey50', shade=TRUE, ...) {
 #' @param ...:  additional graphical parameters passed to `text`
 #' 
 #' @export
-text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
+text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, ...) {
   
   # filter node data frame
   tips <- obj$nodes[obj$nodes$n.tips==0, ]
@@ -538,8 +542,8 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
   if (obj$layout=='rectangular' | obj$layout=='slanted') {
     if (is.element(label, c('t', 'b'))) {
       # draw tip labels
-      x <- tips$x
-      if (align) { x <- max(tips$x) }
+      x <- tips$x + offset
+      if (align) { x <- max(tips$x) + offset }
       text(x=x, y=tips$y, labels=paste0(' ', tips$label), 
            adj=0, cex=cex.lab, ...)
     }
@@ -557,10 +561,11 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
         
         # equal angle layout draws zero-angle straight up
         if (obj$layout == 'equal.angle') tip$angle <- pi/2-tip$angle
-        tip <- .rotate.label(tip, cex.lab)
+        tip <- .rotate.label(tip, offset)
         
         text(x=tip$x, y=tip$y, labels=tip$label, 
-             srt=tip$angle/pi*180, adj=0, cex=cex.lab, ...)
+             srt=tip$angle/pi*180, adj=as.integer(tip$rotated), 
+             cex=cex.lab, ...)
       }
     }
     if (is.element(label, c('i', 'b'))) {
@@ -569,10 +574,11 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
         node <- internals[i, ]
         
         if (obj$layout == 'equal.angle') node$angle <- pi/2-node$angle
-        node <- .rotate.label(node, cex.lab)
+        node <- .rotate.label(node, offset)
         
         text(x=node$x, y=node$y, labels=node$label, 
-             srt=node$angle/pi*180, adj=0, cex=cex.lab, ...) 
+             srt=node$angle/pi*180, adj=as.integer(node$rotated), 
+             cex=cex.lab, ...) 
       }
     }
   }
@@ -588,26 +594,28 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, ...) {
 #' 
 #' @param node:  named vector, a row from the nodes data frame of a 
 #'        `phyloLayout` object.
+#' @param offset:  amount to push label outward from origin
+#' 
 #' @return  a named vector with updated `x`, `y`, `angle` and `label` values
 #' 
 #' @keywords internal
-.rotate.label <- function(node, cex.lab) {
+.rotate.label <- function(node, offset) {
+  # slide label outward
+  node$x <- node$x + offset*cos(node$angle)
+  node$y <- node$y + offset*sin(node$angle)
+  
   h <- node$angle %% (2*pi)
   if (h>0.5*pi && h<(1.5*pi)) {
-    # slide label outward
-    w <- strwidth(node$label, units='user') * cex.lab
-    node$x <- node$x + w*cos(node$angle)
-    node$y <- node$y + w*sin(node$angle)
-    
     # invert the label
     node$angle <- node$angle+pi
-    
     # pad the label on the right
     node$label <- paste0(node$label, ' ')
+    node$rotated <- TRUE
   }
   else {
     # pad the label on the left
     node$label <- paste0(' ', node$label)
+    node$rotated <- FALSE
   }
   node
 }
@@ -745,11 +753,9 @@ draw.guidelines <- function(obj, lty=3, ...) {
 #' Generic function for drawing a grid of coloured or grey-scale 
 #' rectangles corresponding to values in a matrix `z`.  Rows in 
 #' the matrix are assumed to correspond to tips of the tree.
-#' Only rectangular or slanted tree layouts are supported.  If 
-#' you want to annotate a circular (radial) layout, use `ringplot`.
 #' 
 #' @param obj:  an S3 object of class `phyloLayout`
-#' @param z:  matrix, data to annotate
+#' @param z:  matrix, data to annotate tips in order of *nodes*
 #' @param xlim:  horizontal range of grid relative to current plot device.
 #'        Note this function will call `xpd=NA` to permit drawing 
 #'        in margins.
@@ -768,41 +774,60 @@ image.phyloLayout <- function(obj, z, xlim, col=NA, border='white', xaxt='y', ..
     col <- colorRampPalette(c('firebrick', 'dodgerblue'))(max(z, na.rm=T))
   }
   
-  tips <- obj$edges[obj$edges$isTip, ]
+  #tips <- obj$edges[obj$edges$isTip, ]
+  tips <- obj$nodes[obj$nodes$n.tips==0, ]
   
   # check that z has the expected dimensions
   if (nrow(z) != nrow(tips)) {
     stop("Number of rows in matrix `z` does not match number of tips ",
          "in `phyloLayout` object: ", nrow(z), "!=", nrow(tips))
   }
-  y <- tips$y1
-  x <- seq(xlim[1], xlim[2], length.out=ncol(z)+1)
-  dx <- (x[2]-x[1])/2
   
+  # draw the image
   par(xpd=NA)
-  offset <- max(tips$x1) + max(strwidth(obj$nodes$label))
   
-  for (j in 1:ncol(z)) {
-    for (i in 1:nrow(z)) {
-      val <- z[i,j]
-      if (is.na(val)) next
-      rect(xleft = x[j], xright = x[j+1], 
-           ybottom = y[i]-0.5, ytop = y[i]+0.5,
-           border = border, col = col[val])
+  if (obj$layout == 'rectangular' | obj$layout == 'slanted') {
+    y <- tips$y
+    x <- seq(xlim[1], xlim[2], length.out=ncol(z)+1)
+    dx <- (x[2]-x[1])/2
+    
+    for (j in 1:ncol(z)) {
+      for (i in 1:nrow(z)) {
+        val <- z[i,j]
+        if (is.na(val)) next
+        rect(xleft = x[j], xright = x[j+1], 
+             ybottom = y[i]-0.5, ytop = y[i]+0.5,
+             border = border, col = col[val])
+      }
+    }
+    
+    # draw axis (override masking of labels)
+    if (xaxt != 'n') {
+      odds <- seq(1, ncol(z), 2)
+      evens <- odds+1
+      suppressWarnings({
+        axis(side=1, at=x[1:ncol(z)]+dx, labels=NA, ...)
+        axis(side=1, at=x[odds]+dx, labels=names(geno)[odds], lwd=0, ...)
+        axis(side=1, at=x[evens]+dx, labels=names(geno)[evens], lwd=0, ...)
+      })
     }
   }
-  
-  # draw axis (override masking of labels)
-  if (xaxt != 'n') {
-    odds <- seq(1, ncol(z), 2)
-    evens <- odds+1
-    suppressWarnings({
-      axis(side=1, at=x[1:ncol(z)]+dx, labels=NA, ...)
-      axis(side=1, at=x[odds]+dx, labels=names(geno)[odds], lwd=0, ...)
-      axis(side=1, at=x[evens]+dx, labels=names(geno)[evens], lwd=0, ...)
-    })
+  else if (obj$layout == 'radial') {
+    angles <- tips$angle
+    d.theta <- pi/nrow(tips)
+    r <- seq(xlim[1], xlim[2], length.out=ncol(z)+1)
+    dr <- (r[2]-r[1])/2
+    
+    for (j in 1:ncol(z)) {
+      for (i in 1:nrow(z)) {
+        val <- z[i,j]
+        if (is.na(val)) next
+        draw.arc(x = 0, y = 0, theta0 = angles[i]-d.theta, 
+                 theta1 = angles[i]+d.theta, r0 = r[j], r1 = r[j+1],
+                 col = col[val], border = border)
+      }
+    }
   }
-
   par(xpd=FALSE)
 }
 

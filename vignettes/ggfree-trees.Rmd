@@ -227,12 +227,56 @@ geno <- geno[match(flu$tip.label, row.names(geno)), ]
 # draw boxes
 require(RColorBrewer)
 col <- brewer.pal(3, 'Set2')
-image(L, geno[index, ], xlim=c(30, 37), col=col, cex.axis=0.75, line=-2)
+image(L, geno, xlim=c(30, 37), col=col, cex.axis=0.75, line=-2)
 ```
 
 This end result is pretty similar to the `ggtree` example (Figure 5 from [this paper](https://doi.org/10.1111/2041-210X.12628)), except that we're not embedding small images and not annotating the internal nodes with amino acid substitutions (which I find rather messy and uninformative!).
 
 
+## Example: a bird tree
 
+The `ape` package has several examples of phylogenetic trees that relates birds at different taxonomic levels.
+I'm going to use one that relates birds at the level of families.
+```{r fig.width=10, fig.height=10, out.width="50%"}
+# load the example tree
+data("bird.families")
+plot(tree.layout(bird.families, type='o'), cex.lab=0.8)
+```
 
+I'd like to annotate this tree with the number of named species per family.
+Since these data are not provided with this tree object, I had to search around for some supplementary data.
+I settled on the dataset published by the non-governmental conservation organization [BirdLife International](http://datazone.birdlife.org/home), where I retrieved the ZIP archive including an Excel spreadsheet that I converted to a CSV and processed in R.
+The resulting data frame covers substantially more bird families than our phylogeny:
+```{r}
+path <- system.file("extdata/birdlife.csv", package='ggfree')
+birds <- read.csv(path, row.names=1)
+head(birds)
+nrow(birds)
+```
 
+Let's try to match up family names:
+```{r}
+index <- match(bird.families$tip.label, birds$Family)
+# some family names failed to match
+bird.families$tip.label[is.na(index)]
+# There's only 13 of these missing, so I'm willing to manually restore them.
+# I *think* Dacelonidae is the tree kingfishers subfamily...
+missing <- data.frame(
+  Family=c("Dendrocygnidae", "Bucorvidae", "Rhinopomastidae", "Dacelonidae", "Cerylidae", "Centropidae", "Coccyzidae", "Crotophagidae", "Neomorphidae", "Batrachostomidae", "Eurostopodidae", "Chionididae", "Eopsaltriidae"),
+  Count=c(8, 2, 3, 70, 9, 10, 13, 4, 6, 5, 3, 2, 44)
+)
+birds <- rbind(birds, missing)
+index <- match(bird.families$tip.label, birds$Family)
+```
+
+Now we're ready to use this information to annotate the tree: 
+```{r fig.width=10, fig.height=10, out.width="100%"}
+# the count distribution is more even if we do a log-transform
+bins <- as.integer(cut(log(birds$Count[index]), breaks=8))
+require(RColorBrewer)
+pal <- brewer.pal(9, 'Blues')[2:9]
+
+L <- tree.layout(bird.families, type='o')
+plot(L, cex.lab=0.7, offset=2, mar=rep(5,4), col='chocolate')
+image(L, z=as.matrix(bins), xlim=c(28.5,30), col=pal)
+```
