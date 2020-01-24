@@ -109,7 +109,7 @@ print.phyloData <- function(obj) {
 #'   \item{"r"}{Rectangular layout}
 #'   \item{"s"}{Slanted (triangular) layout}
 #'   \item{"u"}{Unrooted (equal-angle) layout}
-#'   \item{"c"}{Circular (radial) layout}
+#'   \item{"o"}{Circular (radial) layout}
 #' }
 #' @param unscaled:  if TRUE, return a cladogram layout
 #' 

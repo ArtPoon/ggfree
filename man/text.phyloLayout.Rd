@@ -4,7 +4,7 @@
 \alias{text.phyloLayout}
 \title{text.phyloLayout}
 \usage{
-\method{text}{phyloLayout}(obj, label = "t", align = FALSE, cex.lab = 1, ...)
+\method{text}{phyloLayout}(obj, label = "t", align = FALSE, cex.lab = 1, offset = 0, ...)
 }
 \arguments{
 \item{obj:}{an S3 object of class `phyloLayout`}

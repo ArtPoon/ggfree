@@ -9,7 +9,7 @@
 \arguments{
 \item{obj:}{an S3 object of class `phyloLayout`}
 
-\item{z:}{matrix, data to annotate}
+\item{z:}{matrix, data to annotate tips in order of *nodes*}
 
 \item{xlim:}{horizontal range of grid relative to current plot device.
 Note this function will call `xpd=NA` to permit drawing 
@@ -25,6 +25,4 @@ in margins.}
 Generic function for drawing a grid of coloured or grey-scale 
 rectangles corresponding to values in a matrix `z`.  Rows in 
 the matrix are assumed to correspond to tips of the tree.
-Only rectangular or slanted tree layouts are supported.  If 
-you want to annotate a circular (radial) layout, use `ringplot`.
 }

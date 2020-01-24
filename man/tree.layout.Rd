@@ -14,7 +14,7 @@ tree.layout(phy, type = "r", unscaled = FALSE)
   \item{"r"}{Rectangular layout}
   \item{"s"}{Slanted (triangular) layout}
   \item{"u"}{Unrooted (equal-angle) layout}
-  \item{"c"}{Circular (radial) layout}
+  \item{"o"}{Circular (radial) layout}
 }}
 
 \item{unscaled:}{if TRUE, return a cladogram layout}

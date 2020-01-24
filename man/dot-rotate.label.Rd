@@ -6,11 +6,13 @@
 Adjust the string rotation of node labels for unrooted
 or radial trees so they are not upside-down.}
 \usage{
-.rotate.label(node, cex.lab)
+.rotate.label(node, offset)
 }
 \arguments{
 \item{node:}{named vector, a row from the nodes data frame of a 
 `phyloLayout` object.}
+
+\item{offset:}{amount to push label outward from origin}
 }
 \value{
 a named vector with updated `x`, `y`, `angle` and `label` values
