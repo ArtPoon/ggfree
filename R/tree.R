@@ -137,11 +137,11 @@ tree.layout <- function(phy, type='r', unscaled=FALSE) {
   }
   else if (type=='u') {
     # unrooted
-    .layout.equalangle(phy, unscaled)
+    .layout.equalangle(phy, unscaled=unscaled)
   }
   else if (type == 'o') {
     # circular (radial)
-    .layout.radial(phy, unscaled)
+    .layout.radial(phy, unscaled=unscaled)
   }
   else {
     stop("Unrecognized layout type '", type, "'")
@@ -271,7 +271,7 @@ print.phyloLayout <- function(obj) {
     # unrooting destroys internal node labels
     phy$node.label <- paste("Node", 1:Nnode(phy), sep='')
   }
-  pd <- as.phyloData(phy, unscaled)
+  pd <- as.phyloData(phy, unscaled=unscaled)
   
   # allocate new node attributes
   pd$nodes$start <- NA
@@ -340,8 +340,8 @@ print.phyloLayout <- function(obj) {
     last.start <- child$end
     
     # map to x,y coordinates
-    child$x <- node$x + child$r * sin(child$angle)
-    child$y <- node$y + child$r * cos(child$angle)
+    child$x <- node$x + (child$r-node$r) * sin(child$angle)
+    child$y <- node$y + (child$r-node$r) * cos(child$angle)
     
     # save to data frame
     pd$nodes[i, ] <- child

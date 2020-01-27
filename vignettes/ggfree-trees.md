@@ -348,9 +348,10 @@ Let’s try to match up family names:
 index <- match(bird.families$tip.label, birds$Family)
 # some family names failed to match
 bird.families$tip.label[is.na(index)]
-#>  [1] "Dendrocygnidae"   "Bucorvidae"       "Rhinopomastidae"  "Dacelonidae"     
-#>  [5] "Cerylidae"        "Centropidae"      "Coccyzidae"       "Crotophagidae"   
-#>  [9] "Neomorphidae"     "Batrachostomidae" "Eurostopodidae"   "Chionididae"     
+#>  [1] "Dendrocygnidae"   "Bucorvidae"       "Rhinopomastidae" 
+#>  [4] "Dacelonidae"      "Cerylidae"        "Centropidae"     
+#>  [7] "Coccyzidae"       "Crotophagidae"    "Neomorphidae"    
+#> [10] "Batrachostomidae" "Eurostopodidae"   "Chionididae"     
 #> [13] "Eopsaltriidae"
 # There's only 13 of these missing, so I'm willing to manually restore them.
 # I *think* Dacelonidae is the tree kingfishers subfamily...
