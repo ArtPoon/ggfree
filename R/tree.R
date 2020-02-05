@@ -183,11 +183,15 @@ print.phyloLayout <- function(obj) {
   pd$nodes$y[tips] <- 1:Ntip(phy)
   
   # assign vertical positions to internal nodes
-  internals <- pd$edges$child[!pd$edges$isTip]
-  for (i in rev(internals)) {
-    children <- pd$edges$child[pd$edges$parent==i]
-    pd$nodes$y[i] <- mean(pd$nodes$y[children])
+  max.n.tips <- max(pd$nodes$n.tips)
+  for (i in 1:max.n.tips) {
+    internals <- which(pd$nodes$n.tips==i)
+    for (j in internals) {
+      children <- pd$edges$child[pd$edges$parent==j]
+      pd$nodes$y[j] <- mean(pd$nodes$y[children])
+    }
   }
+  
   root <- Ntip(phy)+1
   children <- pd$edges$child[pd$edges$parent==root]
   pd$nodes$y[root] <- mean(pd$nodes$y[children])
@@ -230,11 +234,15 @@ print.phyloLayout <- function(obj) {
   pd$nodes$angle[tips] <- (1:Ntip(phy)) / Ntip(phy) * 2 * pi
   
   # assign angles to internal nodes
-  internals <- pd$edges$child[!pd$edges$isTip]
-  for (i in rev(internals)) {
-    children <- pd$edges$child[pd$edges$parent==i]
-    pd$nodes$angle[i] <- mean(pd$nodes$angle[children])
+  max.n.tips <- max(pd$nodes$n.tips)
+  for (i in 1:max.n.tips) {
+    internals <- which(pd$nodes$n.tips==i)
+    for (j in internals) {
+      children <- pd$edges$child[pd$edges$parent==j]
+      pd$nodes$angle[j] <- mean(pd$nodes$angle[children])
+    }
   }
+
   root <- Ntip(phy)+1
   children <- pd$edges$child[pd$edges$parent==root]
   pd$nodes$angle[root] <- mean(pd$nodes$angle[children])
