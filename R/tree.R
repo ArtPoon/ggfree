@@ -167,6 +167,34 @@ print.phyloLayout <- function(obj) {
 }
 
 
+.get.root <- function(edges) {
+  idx <- which(!is.element(edges$parent, edges$child))
+  root <- unique(edges$parent[idx])
+  if (length(root) == 0) {
+    stop("Failed to find root in .get.root")
+  }
+  if (length(root) > 1) {
+    stop("Found multiple roots in .get.root")
+  }
+  root
+}
+
+.reorder.nodes <- function(edges, node, order, result=c()) {
+  if (order=='preorder') {
+    result <- c(result, node)  # parent before children
+  }
+  
+  children <- edges$child[edges$parent == node]
+  for (child in children) {
+    result <- .reorder.nodes(edges, child, order, result)
+  }
+  if (order=='postorder') {
+    result <- c(result, node)  # children before parent
+  }
+  return(result)
+}
+
+
 
 #' .layout.rect
 #' 
@@ -183,18 +211,13 @@ print.phyloLayout <- function(obj) {
   pd$nodes$y[tips] <- 1:Ntip(phy)
   
   # assign vertical positions to internal nodes
-  max.n.tips <- max(pd$nodes$n.tips)
-  for (i in 1:max.n.tips) {
-    internals <- which(pd$nodes$n.tips==i)
-    for (j in internals) {
-      children <- pd$edges$child[pd$edges$parent==j]
-      pd$nodes$y[j] <- mean(pd$nodes$y[children])
+  root <- .get.root(pd$edges)
+  for (i in .reorder.nodes(pd$edges, root, order='postorder')) {
+    if (i > Ntip(phy)) {
+      children <- pd$edges$child[pd$edges$parent==i]
+      pd$nodes$y[i] <- mean(pd$nodes$y[children])
     }
   }
-  
-  root <- Ntip(phy)+1
-  children <- pd$edges$child[pd$edges$parent==root]
-  pd$nodes$y[root] <- mean(pd$nodes$y[children])
 
   # map node coordinates to edges
   pd$edges$x0 <- pd$nodes$x[pd$edges$parent]
@@ -234,18 +257,13 @@ print.phyloLayout <- function(obj) {
   pd$nodes$angle[tips] <- (1:Ntip(phy)) / Ntip(phy) * 2 * pi
   
   # assign angles to internal nodes
-  max.n.tips <- max(pd$nodes$n.tips)
-  for (i in 1:max.n.tips) {
-    internals <- which(pd$nodes$n.tips==i)
-    for (j in internals) {
-      children <- pd$edges$child[pd$edges$parent==j]
-      pd$nodes$angle[j] <- mean(pd$nodes$angle[children])
+  root <- .get.root(pd$edges)
+  for (i in .reorder.nodes(pd$edges, root, order='postorder')) {
+    if (i > Ntip(phy)) {
+      children <- pd$edges$child[pd$edges$parent==i]
+      pd$nodes$angle[i] <- mean(pd$nodes$angle[children])
     }
   }
-
-  root <- Ntip(phy)+1
-  children <- pd$edges$child[pd$edges$parent==root]
-  pd$nodes$angle[root] <- mean(pd$nodes$angle[children])
   
   # calculate x,y from polar coordinates
   pd$nodes$x <- pd$nodes$r * cos(pd$nodes$angle)
