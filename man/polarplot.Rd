@@ -15,6 +15,9 @@ polarplot(
   use.names = FALSE,
   pad.names = 0.05,
   cex.names = 0.8,
+  col.names = NULL,
+  border = "black",
+  las = 1,
   ...
 )
 }
@@ -36,6 +39,12 @@ use these to label the outer edge of each sector.}
 \item{pad.names:}{extra distance from origin for labels (default 0.05)}
 
 \item{cex.names:}{character expansion factor for labels (default 0.8)}
+
+\item{col.names:}{color to pass to text(), defaults to black}
+
+\item{border:}{color to draw border, passed to polygon(); default black}
+
+\item{las:}{1, horizontal (default); 2, perpendicular (along radius)}
 
 \item{...:}{additional arguments passed to the \code{plot} function.}
 }
