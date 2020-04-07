@@ -124,3 +124,32 @@ draw.arc <- function(x, y, theta0, theta1, r0, r1=NA, n=64, ...) {
     ) 
   }
 }
+
+
+
+#' draw.stack
+#' 
+#' Draw stacked bars as in barplot(), but with arbitrary location
+#' on x-axis.
+#' TODO: extend for circular layouts using draw.arc
+#' 
+#' @param x: numeric vector or matrix of non-negative values
+#' @param offset: horizontal location of bars relative to origin
+#' @param width: 
+draw.stack <- function(x, xoffset, yoffset=0, width=1, space=0.1, col=NA, ...) {
+  if (is.vector(x)) {
+    y <- c(0, cumsum(x)) + yoffset
+    rect(xleft=xoffset+space, xright=xoffset+width-space, 
+         ybottom=y[1:(length(y)-1)], ytop=y[2:length(y)], 
+         col=col, ...)
+  }
+  else if (is.matrix(x)) {
+    for (i in 1:ncol(x)) {
+      y <- c(0, cumsum(x[,i])) + yoffset
+      rect(xleft=xoffset+space, xright=xoffset+width-space, 
+           ybottom=y[1:(length(y)-1)], ytop=y[2:length(y)], 
+           col=col, ...)
+      xoffset <- xoffset + width
+    }
+  }
+}
