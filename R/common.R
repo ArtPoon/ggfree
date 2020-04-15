@@ -136,6 +136,7 @@ draw.arc <- function(x, y, theta0, theta1, r0, r1=NA, n=64, ...) {
 #' @param x: numeric vector or matrix of non-negative values
 #' @param offset: horizontal location of bars relative to origin
 #' @param width: 
+#' @export
 draw.stack <- function(x, xoffset, yoffset=0, width=1, space=0.1, col=NA, ...) {
   if (is.vector(x)) {
     y <- c(0, cumsum(x)) + yoffset

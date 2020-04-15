@@ -40,9 +40,8 @@ as.phyloData <- function(phy, unscaled=FALSE) {
   )
   
   # calculate number of tips per node
-  st <- subtrees(phy)
-  nodes$n.tips <- c(rep(0, Ntip(phy)), sapply(st, Ntip))
-  
+  #st <- subtrees(phy)
+  nodes$n.tips <- c(rep(0, Ntip(phy)), count.tips(phy)) #sapply(st, Ntip))
 
   # carry over any non-default attributes
   # we assume these are ordered correctly!
@@ -77,6 +76,28 @@ as.phyloData <- function(phy, unscaled=FALSE) {
   obj <- list(edges=edges, nodes=nodes)
   class(obj) <- 'phyloData'
   obj
+}
+
+
+#' count.tips
+#' 
+#' Calculate the number of tips for every internal node in the tree.
+#' 
+#' @param phy: an S3 object of class `phylo` (`ape`` package)
+#' @return numeric vector of length Nnode(phy), sorted in preorder
+#' @export
+count.tips <- function(phy) {
+  ntips <- list()
+  for (i in 1:Ntip(phy)) {
+    ntips[i] <- 1
+  }
+  # assumes that internal nodes are sorted for preorder traversal
+  # i.e., root node has lowest index
+  for (i in seq(Ntip(phy)+Nnode(phy), Ntip(phy)+1, -1)) {
+    ntips[i] <- sum(sapply(phy$edge[phy$edge[,1]==i, 2], 
+                           function(j) ntips[[j]]))
+  }
+  return(unlist(ntips)[(Ntip(phy)+1):length(ntips)])
 }
 
 
