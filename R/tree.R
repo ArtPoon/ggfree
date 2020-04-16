@@ -452,7 +452,7 @@ print.phyloLayout <- function(obj) {
 #' 
 #' @export
 plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.lab=0.8, 
-                             mar=NA, ...) {
+                             mar=NA, xlim=NA, ...) {
   # check inputs
   if (!is.element('phyloLayout', class(obj))) {
     stop("Argument `obj` must be S3 object of class `phyloData`")
@@ -469,7 +469,10 @@ plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.
     } else {
       par(mar=mar)
     }
-    plot(NA, xlim=c(0, max(obj$nodes$x)), ylim=c(0, max(obj$nodes$y)+1),
+    if (any(is.na(xlim))) {
+      xlim=c(0, max(obj$nodes$x))  # default
+    }
+    plot(NA, xlim=xlim, ylim=c(0, max(obj$nodes$y)+1),
          main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
   }
   else if (obj$layout=='radial' | obj$layout == 'equal.angle') {
@@ -479,7 +482,10 @@ plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.
     } else {
       par(mar=mar)
     }
-    plot(NA, xlim=range(obj$nodes$x), ylim=range(obj$nodes$y),
+    if (any(is.na(xlim))) {
+      xlim=range(obj$nodes$x)  # default
+    }
+    plot(NA, xlim=xlim, ylim=range(obj$nodes$y),
          main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
   }
   
