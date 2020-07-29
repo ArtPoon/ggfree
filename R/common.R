@@ -88,6 +88,24 @@ blend.colors <- function(col) {
 }
 
 
+#' gg.rainbow
+#' 
+#' Mimic default colour palette of ggplot2
+#' Credit: John Colby, https://stackoverflow.com/questions/8197559/emulate-ggplot2-default-color-palette
+#' 
+#' @param n:  number of colours to generate
+#' @param c:  chroma, radial component of hue colour space (saturation)
+#' @param l:  luminance in range [0, 100], vertical component of 
+#'            hue colour space (converges to black as l approaches 0)
+#' @return vector of colour specification strings
+#' 
+#' @export
+gg.rainbow <- function(n, c=100, l=65, alpha=1) {
+  hues <- seq(15, 375, length = n + 1)
+  hcl(h=hues, c=c, l=l, alpha=alpha)[1:n]
+}
+
+
 #' draw.arc
 #' 
 #' \code{draw.arc} draws an annular sector around origin (x,y)

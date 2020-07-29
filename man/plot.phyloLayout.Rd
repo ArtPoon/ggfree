@@ -12,6 +12,7 @@
   label = "t",
   cex.lab = 0.8,
   mar = NA,
+  xlim = NA,
   ...
 )
 }
