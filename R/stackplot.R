@@ -126,7 +126,7 @@ stackplot <- function(obj, x=NA, freq=TRUE, type='n', spline=FALSE,
   }
   
   # generate cumulative frequencies
-  g <- cbind(g0, t(apply(f, 1, cumsum)))
+  g <- cbind(g0, g0+t(apply(f, 1, cumsum)))
   
   # prepare plot region
   if (any(is.na(xlim))) {
