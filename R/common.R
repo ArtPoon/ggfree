@@ -90,7 +90,7 @@ blend.colors <- function(col) {
 
 #' gg.rainbow
 #' 
-#' Mimic default colour palette of ggplot2
+#' Mimic default colour palette of ggplot2.
 #' Credit: John Colby, https://stackoverflow.com/questions/8197559/emulate-ggplot2-default-color-palette
 #' 
 #' @param n:  number of colours to generate

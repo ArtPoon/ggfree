@@ -2,10 +2,13 @@
 #' 
 #' Generates a stacked area plot of the absolute or relative
 #' frequencies of groups over time (or some other discrete or 
-#' continuous variable).
+#' continuous variable).  
+#' Stream plot functionality inspired by https://gist.github.com/menugget/7864454
 #' 
-#' Credit for streamplot
-#' https://gist.github.com/menugget/7864454
+#' @references
+#' Byron L, Wattenberg M. Stacked graphs–geometry & aesthetics. 
+#' IEEE transactions on visualization and computer graphics. 
+#' 2008 Oct 24;14(6):1245-52.
 #' 
 #' @examples 
 #' stackplot(EuStockMarkets, xlab='Days (1991-1998)', 
@@ -15,16 +18,22 @@
 #' # a centered stackplot with shading 
 #' last.mar <- par()$mar
 #' par(mar=rep(1,4))
-#' stackplot(EuStockMarkets, center=TRUE, density=seq(0, 60, 20), 
-#'   angle=30, border='black', bty='n', xaxt='n', yaxt='n', lwd=0.5)
+#' stackplot(EuStockMarkets, type='t', density=seq(0, 60, 20), 
+#'   angle=30, col='black', border='black', bty='n', xaxt='n', 
+#'   yaxt='n', lwd=0.5)
 #' par(mar=last.mar)
 #'
-#' # diversity of SARS-CoV-2 in 2020
-#' par(mar=c(1,1,3,1))
-#' set.seed(1); pal <- gg.rainbow(ncol(cov2))[sample.int(ncol(cov2))]
-#' stackplot(cov2, col=pal, center=T, bty='n', xaxt='n', yaxt='n',
-#' xlab=NA, ylab=NA, spline=T, border='black', lwd=0.2, xlim=c(10, 20))
-#' axis(side=3, at=seq(10, 20, 2), line=1, cex.axis=0.8, col='grey60')
+#' # Christmas bird counts in Hamilton, Ontario
+#' # https://sharleenw.rbind.io/post/hamilton_cbc_part_1/hamilton-christmas-bird-count-part-1/
+#' par(mar=c(3,1,1,1))
+#' n <- ncol(cbc)
+#' set.seed(1)
+#' pal <- gg.rainbow(n-1, c=70)[sample.int(n-1)]
+#' stackplot(cbc[2:n], x=cbc[,1], col=pal, type='w', bty='n', yaxt='n',
+#'           spline=T, border='white', lwd=0.25)
+#' labels <- gsub('\\.', ' ', names(cbc)[2:n])
+#' legend(x=1959, y=600, legend=rev(labels), bty='n', cex=0.7, 
+#'        fill=rev(pal))
 #' par(mar=last.mar)
 #' 
 #' @param obj: an object of class 'matrix' or 'table'.  Rows are assumed 
@@ -33,8 +42,9 @@
 #' @param x: optional, customize the horizontal location of data
 #'           points (i.e., counts in `obj`)
 #' @param freq: if FALSE, normalize to relative frequencies
-#' @param center: if TRUE, normalize frequencies to the mean for 
-#'                centered baseline
+#' @param type: determines baseline of stacked areas, defaults to 'n' 
+#'              for zero baseline (against horizontal axis); 't' applies
+#'              symmetric layout (ThemeRiver), 'w' applies wiggle layout.
 #' @param spline: if TRUE, interpolate data points to draw areas with 
 #'                smoothed trendlines
 #' @param density: numeric, density of shading lines for each area;
@@ -50,7 +60,7 @@
 #' @param ...: additional arguments to pass to `plot` function
 #' 
 #' @export
-stackplot <- function(obj, x=NA, freq=TRUE, center=FALSE, spline=FALSE, 
+stackplot <- function(obj, x=NA, freq=TRUE, type='n', spline=FALSE, 
                       density=NA, angle=NA, col=NA, border=NULL, 
                       lwd=1, xlim=NA, ...) {
   # check inputs
@@ -72,7 +82,7 @@ stackplot <- function(obj, x=NA, freq=TRUE, center=FALSE, spline=FALSE,
   }
   
   # x is used to customize the horizontal location of counts
-  if (!is.na(x)) {
+  if (!any(is.na(x))) {
     if (is.vector(x)) {
       if (length(x) != nrow(obj)) {
         stop("Length of `x` must match number of rows in obj.")
@@ -90,42 +100,56 @@ stackplot <- function(obj, x=NA, freq=TRUE, center=FALSE, spline=FALSE,
   density <- rep(density, length.out=ncol(obj))
   angle <- rep(angle, length.out=ncol(obj))
   
-  # generate cumulative counts
-  cx <- t(apply(obj, 1, cumsum))
-  cx <- cbind(rep(0, nrow(cx)), cx)
-  if (!freq) {
+  if (freq) {
+    f <- obj
+  } else {
     # normalize to relative frequencies
-    cx <- sweep(cx, 1, apply(cx, 1, max), '/')
-  } 
+    f <- sweep(obj, 1, apply(obj, 1, sum), '/')
+  }
+  n <- ncol(f)
+  
+  # compute baseline
+  if (type == 'n') {
+    g0 <- rep(0, nrow(f))
+  }
+  else if (type == 't') {
+    # symmetric (Havre et al., ThemeRiver)
+    g0 <- -0.5 * apply(f, 1, sum)
+  }
+  else if (type == 'w') {
+    # wiggle (see Byron and Wattenberg)
+    # TODO: implement StreamGraph? need interpolation and numeric integration...)
+    g0 <- apply(f, 1, function(x) -sum((n-1:length(x)+1)*x) / (n+1) )
+  }
   else {
-    if (center) {
-      # adjust cumulative counts to center around mean
-      cx <- sweep(cx, 1, apply(cx, 1, mean))
-    }
+    stop("Unrecognized option for `baseline`, expected 'n', 't' or 'w")
   }
   
-  ylim <- c(0, max(cx))
-  if (center) {
-    ylim <- range(cx)
-  }
+  # generate cumulative frequencies
+  g <- cbind(g0, t(apply(f, 1, cumsum)))
   
   # prepare plot region
   if (any(is.na(xlim))) {
     # allows user to override this default
     xlim <- range(x)
   }
-  plot(NA, xlim=xlim, ylim=ylim, ...)
+  plot(NA, xlim=xlim, ylim=range(g), ...)
   
-  for (i in 2:ncol(cx)) {
+  # default palette
+  if (any(is.na(col))) {
+    col <- gg.rainbow(n)
+  }
+  
+  for (i in 2:ncol(g)) {
     if (spline) {
-      y0 <- spline(x, cx[,i-1])
-      y1 <- spline(x, cx[,i], xout=y0$x)
+      y0 <- spline(x, g[,i-1])
+      y1 <- spline(x, g[,i], xout=y0$x)
       xx <- c(y0$x, rev(y0$x))
       yy <- c(y0$y, rev(y1$y))
     }
     else {
-      y0 <- cx[,i-1]
-      y1 <- cx[,i]
+      y0 <- g[,i-1]
+      y1 <- g[,i]
       xx <- c(x, rev(x))
       yy <- c(y0, rev(y1))
     }
@@ -133,6 +157,5 @@ stackplot <- function(obj, x=NA, freq=TRUE, center=FALSE, spline=FALSE,
     polygon(x=xx, y=yy, density=density[i-1], 
             angle=angle[i-1], col=col[i-1], border=border, lwd=lwd)
   }
-
 }
 
