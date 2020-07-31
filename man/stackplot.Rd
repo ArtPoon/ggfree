@@ -77,13 +77,11 @@ par(mar=last.mar)
 # https://sharleenw.rbind.io/post/hamilton_cbc_part_1/hamilton-christmas-bird-count-part-1/
 par(mar=c(3,1,1,1))
 n <- ncol(cbc)
-set.seed(1)
-pal <- gg.rainbow(n-1, c=70)[sample.int(n-1)]
-stackplot(cbc[2:n], x=cbc[,1], col=pal, type='w', bty='n', yaxt='n',
+stackplot(cbc[2:n], x=cbc[,1], type='w', bty='n', yaxt='n',
           spline=T, border='white', lwd=0.25)
-labels <- gsub('\\.', ' ', names(cbc)[2:n])
-legend(x=1959, y=600, legend=rev(labels), bty='n', cex=0.7, 
-       fill=rev(pal))
+labels <- gsub('\\\\.', ' ', names(cbc)[2:n])
+legend(x=1959, y=-150, legend=rev(labels), bty='n', cex=0.7, 
+       fill=rev(pal), y.intersp=0.8)
 par(mar=last.mar)
 
 }
