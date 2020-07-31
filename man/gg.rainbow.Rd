@@ -18,6 +18,6 @@ hue colour space (converges to black as l approaches 0)}
 vector of colour specification strings
 }
 \description{
-Mimic default colour palette of ggplot2
+Mimic default colour palette of ggplot2.
 Credit: John Colby, https://stackoverflow.com/questions/8197559/emulate-ggplot2-default-color-palette
 }

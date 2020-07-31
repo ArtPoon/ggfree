@@ -8,7 +8,7 @@ stackplot(
   obj,
   x = NA,
   freq = TRUE,
-  center = FALSE,
+  type = "n",
   spline = FALSE,
   density = NA,
   angle = NA,
@@ -29,8 +29,9 @@ points (i.e., counts in `obj`)}
 
 \item{freq:}{if FALSE, normalize to relative frequencies}
 
-\item{center:}{if TRUE, normalize frequencies to the mean for 
-centered baseline}
+\item{type:}{determines baseline of stacked areas, defaults to 'n' 
+for zero baseline (against horizontal axis); 't' applies
+symmetric layout (ThemeRiver), 'w' applies wiggle layout.}
 
 \item{spline:}{if TRUE, interpolate data points to draw areas with 
 smoothed trendlines}
@@ -56,11 +57,8 @@ plot range}
 \description{
 Generates a stacked area plot of the absolute or relative
 frequencies of groups over time (or some other discrete or 
-continuous variable).
-}
-\details{
-Credit for streamplot
-https://gist.github.com/menugget/7864454
+continuous variable).  
+Stream plot functionality inspired by https://gist.github.com/menugget/7864454
 }
 \examples{
 stackplot(EuStockMarkets, xlab='Days (1991-1998)', 
@@ -70,16 +68,27 @@ stackplot(EuStockMarkets, xlab='Days (1991-1998)',
 # a centered stackplot with shading 
 last.mar <- par()$mar
 par(mar=rep(1,4))
-stackplot(EuStockMarkets, center=TRUE, density=seq(0, 60, 20), 
-  angle=30, border='black', bty='n', xaxt='n', yaxt='n', lwd=0.5)
+stackplot(EuStockMarkets, type='t', density=seq(0, 60, 20), 
+  angle=30, col='black', border='black', bty='n', xaxt='n', 
+  yaxt='n', lwd=0.5)
 par(mar=last.mar)
 
-# diversity of SARS-CoV-2 in 2020
-par(mar=c(1,1,3,1))
-set.seed(1); pal <- gg.rainbow(ncol(cov2))[sample.int(ncol(cov2))]
-stackplot(cov2, col=pal, center=T, bty='n', xaxt='n', yaxt='n',
-xlab=NA, ylab=NA, spline=T, border='black', lwd=0.2, xlim=c(10, 20))
-axis(side=3, at=seq(10, 20, 2), line=1, cex.axis=0.8, col='grey60')
+# Christmas bird counts in Hamilton, Ontario
+# https://sharleenw.rbind.io/post/hamilton_cbc_part_1/hamilton-christmas-bird-count-part-1/
+par(mar=c(3,1,1,1))
+n <- ncol(cbc)
+set.seed(1)
+pal <- gg.rainbow(n-1, c=70)[sample.int(n-1)]
+stackplot(cbc[2:n], x=cbc[,1], col=pal, type='w', bty='n', yaxt='n',
+          spline=T, border='white', lwd=0.25)
+labels <- gsub('\\.', ' ', names(cbc)[2:n])
+legend(x=1959, y=600, legend=rev(labels), bty='n', cex=0.7, 
+       fill=rev(pal))
 par(mar=last.mar)
 
+}
+\references{
+Byron L, Wattenberg M. Stacked graphs–geometry & aesthetics. 
+IEEE transactions on visualization and computer graphics. 
+2008 Oct 24;14(6):1245-52.
 }
