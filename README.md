@@ -17,6 +17,8 @@ The overall purpose of `ggfree` is to make it easier to generate plots
 in the style of [ggplot2](https://ggplot2.tidyverse.org/) and its
 extensions, without ever actually using any ggplot2 code.
 
+![](man/figures/collage.png)
+
 ## Installation
 
 For the time being, the simplest method is to use the `devtools`
@@ -33,43 +35,6 @@ your R script.)
 
 ## Examples
 
-### Fancy gridlines
-
-The major and minor gridlines on a shaded background is one of the
-distinctive characteristics of the default `ggplot2` theme. This
-implementation uses `rect` and `abline` to obtain the same look.
-
-``` r
-require(ggfree)
-#> Loading required package: ggfree
-#> Loading required package: ape
-#> 
-#> Attaching package: 'ggfree'
-#> The following object is masked from 'package:ape':
-#> 
-#>     unroot
-# prepare the plot region
-plot(NA, xlim=range(faithful$eruptions), ylim=range(faithful$waiting),
-     xlab='Duration of eruption (mins)', ylab='Waiting time (mins)')
-add.grid()  # <-- a ggfree function!
-points(faithful$eruptions, faithful$waiting, pch=21, bg='white')
-```
-
-<img src="man/figures/README-unnamed-chunk-3-1.png" width="400" style="display: block; margin: auto;" />
-
-We can also vary the colours, turn off major or minor gridlines, or skip
-vertical or horizontal lines:
-
-``` r
-plot(NA, xlim=range(faithful$eruptions), ylim=range(faithful$waiting),
-     xlab='Duration of eruption (mins)', ylab='Waiting time (mins)')
-# now with non-default arguments!
-add.grid(mode='x', bg.col='seashell2', lwd.minor=0)
-points(faithful$eruptions, faithful$waiting, pch=21, bg='white')
-```
-
-<img src="man/figures/README-unnamed-chunk-4-1.png" width="400" style="display: block; margin: auto;" />
-
 ### Slopegraphs
 
 In general, a slopegraph is a method for visually comparing a paired set
@@ -80,6 +45,13 @@ data sets is packaged with `ggfree`:
 
 ``` r
 require(ggfree)
+#> Loading required package: ggfree
+#> Loading required package: ape
+#> 
+#> Attaching package: 'ggfree'
+#> The following object is masked from 'package:ape':
+#> 
+#>     unroot
 co2.emissions
 #>                          per.cap.2000 per.cap.2010
 #> Netherland Antilles              8.52         5.99
@@ -103,7 +75,7 @@ values:
 slopegraph(co2.emissions, colorize=T)
 ```
 
-<img src="man/figures/README-unnamed-chunk-6-1.png" width="500" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-4-1.png" width="500" style="display: block; margin: auto;" />
 Setting `colorize` to `TRUE` causes the line segments to be coloured to
 emphasize positive and negative slopes.
 
@@ -122,7 +94,7 @@ title(expression(text=paste('CO'[2], ' emissions (metric tons) per capita')),
       cex=0.7)
 ```
 
-<img src="man/figures/README-unnamed-chunk-7-1.png" width="500" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-5-1.png" width="500" style="display: block; margin: auto;" />
 
 ### Ringplots
 
@@ -158,7 +130,7 @@ use.names=T, offset=0.05, srt=90)
 text(x=0, y=0, adj=0.5, label='Death rates\nin Virginia\n(1940)', cex=0.8)
 ```
 
-<img src="man/figures/README-unnamed-chunk-8-1.png" width="400" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-6-1.png" width="400" style="display: block; margin: auto;" />
 
 ### Polar area charts
 
@@ -192,7 +164,7 @@ legend(x=-0.8, y=0.6, legend=c('Wounds', 'Other', 'Disease'), bty='n',
        fill=pal, cex=0.9)
 ```
 
-<img src="man/figures/README-unnamed-chunk-9-1.png" width="500" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-7-1.png" width="500" style="display: block; margin: auto;" />
 
 ### Ridgeplots
 
@@ -210,10 +182,31 @@ In this example, we’re going to make use of the `add.alpha` function in
 par(mar=c(5,5,1,1))
 pal <- add.alpha(brewer.pal(3, 'Set1'), 0.5)
 ridgeplot(split(iris$Sepal.Length, iris$Species), step=0.4, col='white', 
-fill=pal, lwd=2, xlab='Sepal length', cex.lab=1.2)
+          fill=pal, lwd=2, xlab='Sepal length', cex.lab=1.2)
 ```
 
-<img src="man/figures/README-unnamed-chunk-10-1.png" width="400" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-8-1.png" width="400" style="display: block; margin: auto;" />
+
+### Stacked area plots
+
+[Stacked area plots](https://en.wikipedia.org/wiki/Area_chart) are
+similar to stacked barplots (obtained by calling `barplot` with a
+matrix), but drawing polygons that span the horizontal range of the plot
+instead of separate rectangles.
+
+This example uses base R dataset that comprises the daily closing prices
+of major stock markets in Europe:
+
+``` r
+stackplot(EuStockMarkets, xlab='Days (1991-1998)', 
+          ylab='Daily Closing Price', bty='n')
+```
+
+<img src="man/figures/README-unnamed-chunk-9-1.png" width="400" style="display: block; margin: auto;" />
+
+A useful aesthetic device is to separate the baseline from the
+horizontal axis such that the areas flow both below and above a central
+axis.
 
 ## Trees
 
@@ -238,7 +231,7 @@ plot(tree.layout(phy, type='o'), label='b', cex.lab=0.6)
 plot(tree.layout(phy, type='u'), label='n')
 ```
 
-<img src="man/figures/README-unnamed-chunk-12-1.png" width="80%" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-11-1.png" width="80%" style="display: block; margin: auto;" />
 The function `tree.layout` returns an object that holds the `x` and `y`
 coordinates for nodes and edges of the tree, depending on which layout
 algorithm the user has requested. This exposes the data generated by the
@@ -291,7 +284,7 @@ col <- brewer.pal(3, 'Set2')
 image(L, geno[index, ], xlim=c(30, 37), col=col, cex.axis=0.75, line=-2)
 ```
 
-<img src="man/figures/README-unnamed-chunk-14-1.png" width="75%" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-13-1.png" width="75%" style="display: block; margin: auto;" />
 
 Note that most of the functions being used here are generic S3 methods
 in base R (namely, `plot`, `text`, `lines`, `points` and `image`).
@@ -328,7 +321,7 @@ plot(L, cex.lab=0.7, offset=2, mar=rep(5,4), col='chocolate')
 image(L, z=as.matrix(bins), xlim=c(28.5,30), col=pal)
 ```
 
-<img src="man/figures/README-unnamed-chunk-15-1.png" width="80%" style="display: block; margin: auto;" />
+<img src="man/figures/README-unnamed-chunk-14-1.png" width="80%" style="display: block; margin: auto;" />
 
 ## Other works
 
