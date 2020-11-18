@@ -885,5 +885,84 @@ image.phyloLayout <- function(obj, z, xlim, col=NA, border='white', xaxt='y', ..
 }
 
 
+#' Traverse tree from given node (tip) to root, return 
+#' vector of indices.
+#' 
+#' @keywords internal
+.climb.tree <- function(node, edges, result=c()) {
+  if (is.element(node, edges$child)) {
+    parent <- edges$parent[edges$child==node]
+    result <- c(result, parent)
+    result <- .climb.tree(parent, edges, result)
+  }
+  return(result)
+}
 
 
+#' draw.branch
+#'
+#' Locate the common ancestor given a vector of tip labels and 
+#' draw the corresponding branch for a given tree layout.
+#' @param layout:  an S3 object of class `phyloLayout`
+#' @param tips:  a character vector of tip labels
+#' @param col:  color for drawing branch, defaults to red
+#' @param ...:  additional arguments passed to `segments`
+#' 
+#' @export
+draw.branch <- function(layout, tips, col='red', ...) {
+  unmatched <- !is.element(tips, layout$nodes$label)
+  if (any(unmatched)) {
+    stop("Error: not all tip labels found in tree layout:")
+    cat(tips[!unmatched])
+  }
+  
+  # find most recent common ancestor
+  idx <- sapply(tips, function(l) which(layout$nodes$label==l))
+  traj <- lapply(idx, function(i) .climb.tree(i, edges))
+  common <- Reduce(intersect, traj)
+  if (length(common) < 1) {
+    stop("Error: Failed to locate common ancestor of tips ", tips)
+  }
+  mrca <- common[1]
+  
+  if (!is.element(ca, layout$edges$child)) {
+    warning("draw.branch() selected root branch, no action taken.")
+  } else {
+    e <- layout$edges[layout$edges$child==mrca, ]
+    segments(e$x0, e$y0, e$x1, e$y1, col, ...)
+  }
+}
+
+
+#' draw.clade
+#' 
+#' Locate common ancestor in the tree given a set of tip labels
+#' and draw the subtree (clade) of all descendants.
+#' 
+#' @param layout:  an S3 object of class `phyloLayout`
+#' @param tips:  a character vector of tip labels
+#' 
+#' @export
+draw.clade <- function(layout, tips, col='red', ...) {
+  unmatched <- !is.element(tips, layout$nodes$label)
+  if (any(unmatched)) {
+    stop("Error: not all tip labels found in tree layout:")
+    cat(tips[!unmatched])
+  }
+  
+  # find most recent common ancestor
+  idx <- sapply(tips, function(l) which(layout$nodes$label==l))
+  traj <- lapply(idx, function(i) .climb.tree(i, edges))
+  common <- Reduce(intersect, traj)
+  if (length(common) < 1) {
+    stop("Error: Failed to locate common ancestor of tips ", tips)
+  }
+  
+  clade <- setdiff(Reduce(union, traj), common)
+  e <- layout$edges[is.element(layout$edges$child, clade), ]
+  segments(e$x0, e$y0, e$x1, e$y1, col, ...)
+  
+  # do tips as well
+  e <- layout$edges[is.element(layout$edges$child, idx), ]
+  segments(e$x0, e$y0, e$x1, e$y1, col, ...)
+}
