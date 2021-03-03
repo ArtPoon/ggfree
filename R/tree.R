@@ -93,10 +93,24 @@ count.tips <- function(phy) {
   }
   # assumes that internal nodes are sorted for preorder traversal
   # i.e., root node has lowest index
-  for (i in seq(Ntip(phy)+Nnode(phy), Ntip(phy)+1, -1)) {
-    ntips[i] <- sum(sapply(phy$edge[phy$edge[,1]==i, 2], 
-                           function(j) ntips[[j]]))
-  }
+  tryCatch(
+    {
+      for (i in seq(Ntip(phy)+Nnode(phy), Ntip(phy)+1, -1)) {
+        ntips[i] <- sum(sapply(phy$edge[phy$edge[,1]==i, 2], 
+                               function(j) ntips[[j]]))
+      }
+    },
+    error=function(cond) {
+      # phangorn::midpoint does something weird to node indices
+      phy <- read.tree(text=write.tree(phy))
+      ntips <- list()
+      for (i in 1:Ntip(phy)) { ntips[i] <- 1 }
+      for (i in seq(Ntip(phy)+Nnode(phy), Ntip(phy)+1, -1)) {
+        ntips[i] <- sum(sapply(phy$edge[phy$edge[,1]==i, 2], 
+                               function(j) ntips[[j]]))
+      }
+    }
+  )
   return(unlist(ntips)[(Ntip(phy)+1):length(ntips)])
 }
 
@@ -452,7 +466,7 @@ print.phyloLayout <- function(obj) {
 #' 
 #' @export
 plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.lab=0.8, 
-                             mar=NA, xlim=NA, ...) {
+                             mar=NA, xlim=NA, add=FALSE, ...) {
   # check inputs
   if (!is.element('phyloLayout', class(obj))) {
     stop("Argument `obj` must be S3 object of class `phyloData`")
@@ -463,30 +477,32 @@ plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.
   }
   
   # prepare the plot region
-  if (is.element(obj$layout, c('slanted', 'rectangular'))) {
-    if (any(is.na(mar))) {
-      par(mar=c(2,1,1,5))  # default margins
-    } else {
-      par(mar=mar)
+  if (!add) {
+    if (is.element(obj$layout, c('slanted', 'rectangular'))) {
+      if (any(is.na(mar))) {
+        par(mar=c(2,1,1,5))  # default margins
+      } else {
+        par(mar=mar)
+      }
+      if (any(is.na(xlim))) {
+        xlim=c(0, max(obj$nodes$x))  # default
+      }
+      plot(NA, xlim=xlim, ylim=c(0, max(obj$nodes$y)+1),
+           main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
     }
-    if (any(is.na(xlim))) {
-      xlim=c(0, max(obj$nodes$x))  # default
+    else if (obj$layout=='radial' | obj$layout == 'equal.angle') {
+      if (any(is.na(mar))) {
+        # default for radial layout
+        par(mar=rep(2, 4))
+      } else {
+        par(mar=mar)
+      }
+      if (any(is.na(xlim))) {
+        xlim=range(obj$nodes$x)  # default
+      }
+      plot(NA, xlim=xlim, ylim=range(obj$nodes$y),
+           main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
     }
-    plot(NA, xlim=xlim, ylim=c(0, max(obj$nodes$y)+1),
-         main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
-  }
-  else if (obj$layout=='radial' | obj$layout == 'equal.angle') {
-    if (any(is.na(mar))) {
-      # default for radial layout
-      par(mar=rep(2, 4))
-    } else {
-      par(mar=mar)
-    }
-    if (any(is.na(xlim))) {
-      xlim=range(obj$nodes$x)  # default
-    }
-    plot(NA, xlim=xlim, ylim=range(obj$nodes$y),
-         main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
   }
   
   if (type != 'n') {
