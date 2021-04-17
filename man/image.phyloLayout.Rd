@@ -4,16 +4,22 @@
 \alias{image.phyloLayout}
 \title{image}
 \usage{
-\method{image}{phyloLayout}(obj, z, xlim, col = NA, border = "white", xaxt = "y", ...)
+\method{image}{phyloLayout}(obj, z, xlim = NA, col = NA, border = "white", xaxt = "y", ...)
 }
 \arguments{
 \item{obj:}{an S3 object of class `phyloLayout`}
 
-\item{z:}{matrix, data to annotate tips in order of *nodes*}
+\item{z:}{matrix, data to annotate tips in order of *nodes*; this will be 
+recast as a factor, and then an integer vector.  If your input 
+`z` is a numeric (continuous-valued) vector, then you should run 
+`cut(z)` to discretize the distribution.}
 
-\item{xlim:}{horizontal range of grid relative to current plot device.
-Note this function will call `xpd=NA` to permit drawing 
-in margins.}
+\item{xlim:}{limits (x1, x2) of grid relative to current plot device.
+For a radial tree layout, these correspond to the inner and 
+outer radii.  You may need to use trial-and-error to find 
+a good set of boundaries.  Note this function will call 
+`xpd=NA` to permit drawing in margins.
+Defaults to `max(x)+0.01*range(x)` to `max(x)+0.06*range(x)`}
 
 \item{col:}{a vector of colours that maps to factor levels in `z`}
 

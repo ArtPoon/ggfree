@@ -13,6 +13,8 @@
   cex.lab = 0.8,
   mar = NA,
   xlim = NA,
+  add = FALSE,
+  offset = 0,
   ...
 )
 }

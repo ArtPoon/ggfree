@@ -196,6 +196,7 @@ Note that I've omitted some of the code for loading and reformatting the data fo
 
 
 ```{r dpi=300, fig.width=10, fig.height=10, out.width="80%"}
+# now let's try the same thing with ggfree
 L <- tree.layout(flu, 'r')
 plot(L, cex=0.6, type='n', mar=c(3,1,0,20), label='n')
 

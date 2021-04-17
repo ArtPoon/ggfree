@@ -466,7 +466,7 @@ print.phyloLayout <- function(obj) {
 #' 
 #' @export
 plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.lab=0.8, 
-                             mar=NA, xlim=NA, add=FALSE, ...) {
+                             mar=NA, xlim=NA, add=FALSE, offset=0, ...) {
   # check inputs
   if (!is.element('phyloLayout', class(obj))) {
     stop("Argument `obj` must be S3 object of class `phyloData`")
@@ -515,7 +515,7 @@ plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.
   if (label != 'n') {
     # draw node labels
     suppressWarnings({
-      text.phyloLayout(obj, label=label, cex.lab=cex.lab, ...)
+      text.phyloLayout(obj, label=label, cex.lab=cex.lab, offset=offset, ...)
     })
   }
 }
@@ -596,6 +596,8 @@ lines.phyloLayout <- function(obj, col='grey50', shade=TRUE, ...) {
 #'   }
 #' @param align:  if TRUE, all tip labels are drawn at maximum value
 #' @param cex.lab:  character expansion factor for text
+#' @param offset:  float, additional spacing between tree tip and label; 
+#'                 defaults to 0.
 #' @param ...:  additional graphical parameters passed to `text`
 #' 
 #' @export
@@ -824,19 +826,28 @@ draw.guidelines <- function(obj, lty=3, ...) {
 #' the matrix are assumed to correspond to tips of the tree.
 #' 
 #' @param obj:  an S3 object of class `phyloLayout`
-#' @param z:  matrix, data to annotate tips in order of *nodes*
-#' @param xlim:  horizontal range of grid relative to current plot device.
-#'        Note this function will call `xpd=NA` to permit drawing 
-#'        in margins.
+#' @param z:  matrix, data to annotate tips in order of *nodes*; this will be 
+#'            recast as a factor, and then an integer vector.  If your input 
+#'            `z` is a numeric (continuous-valued) vector, then you should run 
+#'            `cut(z)` to discretize the distribution.
+#' @param xlim:  limits (x1, x2) of grid relative to current plot device.
+#'               For a radial tree layout, these correspond to the inner and 
+#'               outer radii.  You may need to use trial-and-error to find 
+#'               a good set of boundaries.  Note this function will call 
+#'               `xpd=NA` to permit drawing in margins.
+#'               Defaults to `max(x)+0.01*range(x)` to `max(x)+0.06*range(x)`
 #' @param col:  a vector of colours that maps to factor levels in `z`
 #' @param border:  colour for border of rectangles in grid
 #' @param xaxt:  if 'n', suppress drawing of axis and labels
 #' 
 #' @export
-image.phyloLayout <- function(obj, z, xlim, col=NA, border='white', xaxt='y', ...) {
-  
+image.phyloLayout <- function(obj, z, xlim=NA, col=NA, border='white', xaxt='y', ...) {
   # recode contents of `z` as integer-valued matrix
-  z <- apply(z, 2, function(x) as.integer(as.factor(x)))
+  if (is.matrix(z)) {
+    z <- apply(z, 2, function(x) as.integer(as.factor(x)))  
+  } else {
+    z <- sapply(z, function(x) as.integer(as.factor(x)))
+  }
   
   # use default colors if not specified by user
   if (any(is.na(col))) {
@@ -857,6 +868,13 @@ image.phyloLayout <- function(obj, z, xlim, col=NA, border='white', xaxt='y', ..
   
   if (obj$layout == 'rectangular' | obj$layout == 'slanted') {
     y <- tips$y
+    
+    if (any(is.na(xlim))) {
+      # guess at decent default limits
+      xrange <- range(obj$nodes$x)
+      xlim <- c(max(xrange) + 0.01*diff(xrange),
+                max(xrange) + 0.06*diff(xrange))
+    }
     x <- seq(xlim[1], xlim[2], length.out=ncol(z)+1)
     dx <- (x[2]-x[1])/2
     
@@ -884,6 +902,13 @@ image.phyloLayout <- function(obj, z, xlim, col=NA, border='white', xaxt='y', ..
   else if (obj$layout == 'radial') {
     angles <- tips$angle
     d.theta <- pi/nrow(tips)
+    
+    if (any(is.na(xlim))) {
+      # guess at decent default limits
+      r.range <- range(obj$nodes$r)
+      xlim <- c(max(r.range) + 0.01*diff(r.range),
+                max(r.range) + 0.06*diff(r.range))
+    }
     r <- seq(xlim[1], xlim[2], length.out=ncol(z)+1)
     dr <- (r[2]-r[1])/2
     

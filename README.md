@@ -325,7 +325,7 @@ image(L, z=as.matrix(bins), xlim=c(28.5,30), col=pal)
 
 ## Other works
 
-  - @aronekuld’s [beeswarm](https://github.com/aroneklund/beeswarm)
+-   @aronekuld’s [beeswarm](https://github.com/aroneklund/beeswarm)
     provides a nice implementation of dot plots where overlapping points
     are displaced away from the vertical axis so they can be seen
     individually.
