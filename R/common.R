@@ -172,3 +172,51 @@ draw.stack <- function(x, xoffset, yoffset=0, width=1, space=0.1, col=NA, ...) {
     }
   }
 }
+
+
+#' axis.srt
+#' Extend generic axis() function with rotation of labels (string rotation,
+#' srt).  If labels on the x-axis are parallel, then they are center justified;
+#' otherwise they are right-justified.
+#' 
+#' @examples 
+#' par(mar=c(5,5,5,5), xpd=FALSE)
+#' boxplot(split(iris$Sepal.Length, iris$Species), xaxt='n')
+#' axis.srt(side=1, at=1:3, labels=levels(iris$Species), srt=30)
+#' axis.srt(side=3, at=1:3, labels=levels(iris$Species), srt=-30)
+#' # draw horizontally instead
+#' boxplot(split(iris$Petal.Length, iris$Species), horizontal=TRUE, yaxt='n')
+#' axis.srt(side=2, at=1:3, labels=levels(iris$Species), srt=-30)
+#' axis.srt(side=4, at=1:3, labels=levels(iris$Species), srt=30)
+#' 
+#' @param side: an integer specifying which side of the plot the axis is
+#'              placed as follows: 1=below, 2=left, 3=above and 4=right.
+#' @param at: the points at which tick-marks are to bve drawn.
+#' @param labels: a character vector of labels.
+#' @param srt:  string rotation in degrees, where 0 is horizontal
+#' @param offset:  distance to draw labels relative to axis, scaled to 
+#'                 dimensions of plot region.
+#' @param cex:  character expansion factor for axis labels
+#' @param ...:  other arguments passed to axis(), *e.g.*, `line` or `col`
+#' 
+#' @export
+axis.srt <- function(side, at, labels, srt, offset=0.05, cex=1, ...) {
+  # draw the usual axis without labels
+  axis(side=side, at=at, labels=FALSE, ...)
+  
+  # get plot region coordinates
+  orient <- ifelse(side %% 2 == 1, 3, 1)
+  span <- diff(par("usr")[orient:(orient+1)])
+  baseline <- par("usr")[c(3,1,4,2)][side] + offset*span*ifelse(side>2, 1, -1)
+  
+  if (side %% 2 == 1) {
+    # horizontal axis
+    text(x=at, y=baseline, labels=labels, cex=cex, 
+         xpd=NA, srt=srt, adj=ifelse(srt==0, 0.5, 1))
+  } else {
+    # vertical axis
+    text(x=baseline, y=at, labels=labels, cex=cex, 
+         xpd=NA, srt=srt, adj=ifelse(side==2, 1, 0))
+  }
+}
+

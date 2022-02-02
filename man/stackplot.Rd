@@ -9,6 +9,7 @@ stackplot(
   x = NA,
   freq = TRUE,
   type = "n",
+  sort = FALSE,
   spline = FALSE,
   density = NA,
   angle = NA,
@@ -16,6 +17,7 @@ stackplot(
   border = NULL,
   lwd = 1,
   xlim = NA,
+  ylim = NA,
   ...
 )
 }
@@ -32,6 +34,12 @@ points (i.e., counts in `obj`)}
 \item{type:}{determines baseline of stacked areas, defaults to 'n' 
 for zero baseline (against horizontal axis); 't' applies
 symmetric layout (ThemeRiver), 'w' applies wiggle layout.}
+
+\item{sort:}{if TRUE, sort counts by marginal totals such that the most 
+frequent types are drawn on the outside of the stack.  This is 
+effective for stream plots, as the most frequent type 
+otherwise drives the overall shape.  Defaults to FALSE (
+plot by input order).}
 
 \item{spline:}{if TRUE, interpolate data points to draw areas with 
 smoothed trendlines}
