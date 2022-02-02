@@ -11,6 +11,7 @@ as `ggplot`, so writing code looks quite similar:
 ``` r
 # load the package without all the preamble
 suppressMessages(require(ggtree))
+#> Warning: package 'ggtree' was built under R version 4.0.3
 
 # generate a random tree
 set.seed(1999); phy <- rtree(50)
@@ -139,40 +140,37 @@ trees. We specify which layout algorithm we want to use by passing a
     right of the figure. The vertical lines are only used to connect
     linegaes to their common ancestors and to separate lineages in the
     vertical dimension - their lengths do not represent any information.
-    
+
     A slanted tree uses the same coordinate information as a rectangular
     layout, except that lineages are connected directly to their
-    ancestral nodes without vertical line
-    segments:
-    
+    ancestral nodes without vertical line segments:
+
     ``` r
     plot(tree.layout(phy, type='s', unscaled=TRUE), cex=0.5, mar=c(0,0,0,3))
     ```
-    
+
     <img src="man/figures/README-unnamed-chunk-7-1.png" width="400" style="display: block; margin: auto;" />
 
 2.  **Circular (radial) trees.** This is essentially the rectangular
     layout algorithm in a polar coordinate system. Time flows outward
-    from the origin (centre) of the
-    plot.
-    
+    from the origin (centre) of the plot.
+
     ``` r
     plot(tree.layout(phy, type='o'))
     ```
-    
+
     <img src="man/figures/README-unnamed-chunk-8-1.png" width="400" style="display: block; margin: auto;" />
 
 3.  **Unrooted trees.** Like many other R packages that provide plot
     functions for trees, `ggtree` implements [Joe
     Felsenstein’s](https://en.wikipedia.org/wiki/Joseph_Felsenstein)
     equal-angle layout algorithm for unrooted trees. Note that I’ve
-    turned off tip labels because they become cluttered in this
-    layout:
-    
+    turned off tip labels because they become cluttered in this layout:
+
     ``` r
     plot(tree.layout(phy, type='u'), label='n', mar=c(0,0,0,0))
     ```
-    
+
     <img src="man/figures/README-unnamed-chunk-9-1.png" width="400" style="display: block; margin: auto;" />
 
 ## Annotating nodes
@@ -207,8 +205,7 @@ save(flu, file="flu.RData")
 ```
 
 Here is the example code from `ggtree` to draw the phylogeny annotated
-with host species and genotype (with a
-heatmap):
+with host species and genotype (with a heatmap):
 
 ``` r
 cols <- scale_color(merged_tree, "dN_vs_dS", low="#0072B2", high="#D55E00",
@@ -261,6 +258,7 @@ Note that I’ve omitted some of the code for loading and reformatting the
 data for brevity and for a more equitable comparison to `ggfree` syntax.
 
 ``` r
+# now let's try the same thing with ggfree
 L <- tree.layout(flu, 'r')
 plot(L, cex=0.6, type='n', mar=c(3,1,0,20), label='n')
 
@@ -302,7 +300,7 @@ This end result is pretty similar to the `ggtree` example (Figure 5 from
 [this paper](https://doi.org/10.1111/2041-210X.12628)), except that
 we’re not embedding small images and not annotating the internal nodes
 with amino acid substitutions (which I find rather messy and
-uninformative\!).
+uninformative!).
 
 ## Example: a bird tree
 
@@ -348,10 +346,9 @@ Let’s try to match up family names:
 index <- match(bird.families$tip.label, birds$Family)
 # some family names failed to match
 bird.families$tip.label[is.na(index)]
-#>  [1] "Dendrocygnidae"   "Bucorvidae"       "Rhinopomastidae" 
-#>  [4] "Dacelonidae"      "Cerylidae"        "Centropidae"     
-#>  [7] "Coccyzidae"       "Crotophagidae"    "Neomorphidae"    
-#> [10] "Batrachostomidae" "Eurostopodidae"   "Chionididae"     
+#>  [1] "Dendrocygnidae"   "Bucorvidae"       "Rhinopomastidae"  "Dacelonidae"     
+#>  [5] "Cerylidae"        "Centropidae"      "Coccyzidae"       "Crotophagidae"   
+#>  [9] "Neomorphidae"     "Batrachostomidae" "Eurostopodidae"   "Chionididae"     
 #> [13] "Eopsaltriidae"
 # There's only 13 of these missing, so I'm willing to manually restore them.
 # I *think* Dacelonidae is the tree kingfishers subfamily...

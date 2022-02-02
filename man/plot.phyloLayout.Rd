@@ -12,6 +12,9 @@
   label = "t",
   cex.lab = 0.8,
   mar = NA,
+  xlim = NA,
+  add = FALSE,
+  offset = 0,
   ...
 )
 }
@@ -63,7 +66,7 @@ axis(side=1)
 
 # unscaled slanted tree with colors
 pal <- colorRampPalette(c('cadetblue', 'brown'))
-plot(tree.layout(phy, type='s', unscaled=T), col=pal(5))
+plot(tree.layout(phy, type='s', unscaled=TRUE), col=pal(5))
 
 # unrooted tree
 plot(tree.layout(phy, type='u'))

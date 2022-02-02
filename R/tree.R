@@ -93,10 +93,24 @@ count.tips <- function(phy) {
   }
   # assumes that internal nodes are sorted for preorder traversal
   # i.e., root node has lowest index
-  for (i in seq(Ntip(phy)+Nnode(phy), Ntip(phy)+1, -1)) {
-    ntips[i] <- sum(sapply(phy$edge[phy$edge[,1]==i, 2], 
-                           function(j) ntips[[j]]))
-  }
+  tryCatch(
+    {
+      for (i in seq(Ntip(phy)+Nnode(phy), Ntip(phy)+1, -1)) {
+        ntips[i] <- sum(sapply(phy$edge[phy$edge[,1]==i, 2], 
+                               function(j) ntips[[j]]))
+      }
+    },
+    error=function(cond) {
+      # phangorn::midpoint does something weird to node indices
+      phy <- read.tree(text=write.tree(phy))
+      ntips <- list()
+      for (i in 1:Ntip(phy)) { ntips[i] <- 1 }
+      for (i in seq(Ntip(phy)+Nnode(phy), Ntip(phy)+1, -1)) {
+        ntips[i] <- sum(sapply(phy$edge[phy$edge[,1]==i, 2], 
+                               function(j) ntips[[j]]))
+      }
+    }
+  )
   return(unlist(ntips)[(Ntip(phy)+1):length(ntips)])
 }
 
@@ -442,7 +456,7 @@ print.phyloLayout <- function(obj) {
 #' 
 #' # unscaled slanted tree with colors
 #' pal <- colorRampPalette(c('cadetblue', 'brown'))
-#' plot(tree.layout(phy, type='s', unscaled=T), col=pal(5))
+#' plot(tree.layout(phy, type='s', unscaled=TRUE), col=pal(5))
 #' 
 #' # unrooted tree
 #' plot(tree.layout(phy, type='u'))
@@ -452,7 +466,7 @@ print.phyloLayout <- function(obj) {
 #' 
 #' @export
 plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.lab=0.8, 
-                             mar=NA, xlim=NA, ...) {
+                             mar=NA, xlim=NA, add=FALSE, offset=0, ...) {
   # check inputs
   if (!is.element('phyloLayout', class(obj))) {
     stop("Argument `obj` must be S3 object of class `phyloData`")
@@ -463,30 +477,32 @@ plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.
   }
   
   # prepare the plot region
-  if (is.element(obj$layout, c('slanted', 'rectangular'))) {
-    if (any(is.na(mar))) {
-      par(mar=c(2,1,1,5))  # default margins
-    } else {
-      par(mar=mar)
+  if (!add) {
+    if (is.element(obj$layout, c('slanted', 'rectangular'))) {
+      if (any(is.na(mar))) {
+        par(mar=c(2,1,1,5))  # default margins
+      } else {
+        par(mar=mar)
+      }
+      if (any(is.na(xlim))) {
+        xlim=c(0, max(obj$nodes$x))  # default
+      }
+      plot(NA, xlim=xlim, ylim=c(0, max(obj$nodes$y)+1),
+           main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
     }
-    if (any(is.na(xlim))) {
-      xlim=c(0, max(obj$nodes$x))  # default
+    else if (obj$layout=='radial' | obj$layout == 'equal.angle') {
+      if (any(is.na(mar))) {
+        # default for radial layout
+        par(mar=rep(2, 4))
+      } else {
+        par(mar=mar)
+      }
+      if (any(is.na(xlim))) {
+        xlim=range(obj$nodes$x)  # default
+      }
+      plot(NA, xlim=xlim, ylim=range(obj$nodes$y),
+           main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
     }
-    plot(NA, xlim=xlim, ylim=c(0, max(obj$nodes$y)+1),
-         main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
-  }
-  else if (obj$layout=='radial' | obj$layout == 'equal.angle') {
-    if (any(is.na(mar))) {
-      # default for radial layout
-      par(mar=rep(2, 4))
-    } else {
-      par(mar=mar)
-    }
-    if (any(is.na(xlim))) {
-      xlim=range(obj$nodes$x)  # default
-    }
-    plot(NA, xlim=xlim, ylim=range(obj$nodes$y),
-         main=NA, xlab=NA, ylab=NA, xaxt='n', yaxt='n', bty='n')
   }
   
   if (type != 'n') {
@@ -499,7 +515,7 @@ plot.phyloLayout <- function(obj, type='l', col='grey50', lwd=2, label='t', cex.
   if (label != 'n') {
     # draw node labels
     suppressWarnings({
-      text.phyloLayout(obj, label=label, cex.lab=cex.lab, ...)
+      text.phyloLayout(obj, label=label, cex.lab=cex.lab, offset=offset, ...)
     })
   }
 }
@@ -580,6 +596,8 @@ lines.phyloLayout <- function(obj, col='grey50', shade=TRUE, ...) {
 #'   }
 #' @param align:  if TRUE, all tip labels are drawn at maximum value
 #' @param cex.lab:  character expansion factor for text
+#' @param offset:  float, additional spacing between tree tip and label; 
+#'                 defaults to 0.
 #' @param ...:  additional graphical parameters passed to `text`
 #' 
 #' @export
@@ -808,19 +826,28 @@ draw.guidelines <- function(obj, lty=3, ...) {
 #' the matrix are assumed to correspond to tips of the tree.
 #' 
 #' @param obj:  an S3 object of class `phyloLayout`
-#' @param z:  matrix, data to annotate tips in order of *nodes*
-#' @param xlim:  horizontal range of grid relative to current plot device.
-#'        Note this function will call `xpd=NA` to permit drawing 
-#'        in margins.
+#' @param z:  matrix, data to annotate tips in order of *nodes*; this will be 
+#'            recast as a factor, and then an integer vector.  If your input 
+#'            `z` is a numeric (continuous-valued) vector, then you should run 
+#'            `cut(z)` to discretize the distribution.
+#' @param xlim:  limits (x1, x2) of grid relative to current plot device.
+#'               For a radial tree layout, these correspond to the inner and 
+#'               outer radii.  You may need to use trial-and-error to find 
+#'               a good set of boundaries.  Note this function will call 
+#'               `xpd=NA` to permit drawing in margins.
+#'               Defaults to `max(x)+0.01*range(x)` to `max(x)+0.06*range(x)`
 #' @param col:  a vector of colours that maps to factor levels in `z`
 #' @param border:  colour for border of rectangles in grid
 #' @param xaxt:  if 'n', suppress drawing of axis and labels
 #' 
 #' @export
-image.phyloLayout <- function(obj, z, xlim, col=NA, border='white', xaxt='y', ...) {
-  
+image.phyloLayout <- function(obj, z, xlim=NA, col=NA, border='white', xaxt='y', ...) {
   # recode contents of `z` as integer-valued matrix
-  z <- apply(z, 2, function(x) as.integer(as.factor(x)))
+  if (is.matrix(z)) {
+    z <- apply(z, 2, function(x) as.integer(as.factor(x)))  
+  } else {
+    z <- sapply(z, function(x) as.integer(as.factor(x)))
+  }
   
   # use default colors if not specified by user
   if (any(is.na(col))) {
@@ -841,6 +868,13 @@ image.phyloLayout <- function(obj, z, xlim, col=NA, border='white', xaxt='y', ..
   
   if (obj$layout == 'rectangular' | obj$layout == 'slanted') {
     y <- tips$y
+    
+    if (any(is.na(xlim))) {
+      # guess at decent default limits
+      xrange <- range(obj$nodes$x)
+      xlim <- c(max(xrange) + 0.01*diff(xrange),
+                max(xrange) + 0.06*diff(xrange))
+    }
     x <- seq(xlim[1], xlim[2], length.out=ncol(z)+1)
     dx <- (x[2]-x[1])/2
     
@@ -868,6 +902,13 @@ image.phyloLayout <- function(obj, z, xlim, col=NA, border='white', xaxt='y', ..
   else if (obj$layout == 'radial') {
     angles <- tips$angle
     d.theta <- pi/nrow(tips)
+    
+    if (any(is.na(xlim))) {
+      # guess at decent default limits
+      r.range <- range(obj$nodes$r)
+      xlim <- c(max(r.range) + 0.01*diff(r.range),
+                max(r.range) + 0.06*diff(r.range))
+    }
     r <- seq(xlim[1], xlim[2], length.out=ncol(z)+1)
     dr <- (r[2]-r[1])/2
     
@@ -885,5 +926,84 @@ image.phyloLayout <- function(obj, z, xlim, col=NA, border='white', xaxt='y', ..
 }
 
 
+#' Traverse tree from given node (tip) to root, return 
+#' vector of indices.
+#' 
+#' @keywords internal
+.climb.tree <- function(node, edges, result=c()) {
+  if (is.element(node, edges$child)) {
+    parent <- edges$parent[edges$child==node]
+    result <- c(result, parent)
+    result <- .climb.tree(parent, edges, result)
+  }
+  return(result)
+}
 
 
+#' draw.branch
+#'
+#' Locate the common ancestor given a vector of tip labels and 
+#' draw the corresponding branch for a given tree layout.
+#' @param layout:  an S3 object of class `phyloLayout`
+#' @param tips:  a character vector of tip labels
+#' @param col:  color for drawing branch, defaults to red
+#' @param ...:  additional arguments passed to `segments`
+#' 
+#' @export
+draw.branch <- function(layout, tips, col='red', ...) {
+  unmatched <- !is.element(tips, layout$nodes$label)
+  if (any(unmatched)) {
+    stop("Error: not all tip labels found in tree layout:")
+    cat(tips[!unmatched])
+  }
+  
+  # find most recent common ancestor
+  idx <- sapply(tips, function(l) which(layout$nodes$label==l))
+  traj <- lapply(idx, function(i) .climb.tree(i, edges))
+  common <- Reduce(intersect, traj)
+  if (length(common) < 1) {
+    stop("Error: Failed to locate common ancestor of tips ", tips)
+  }
+  mrca <- common[1]
+  
+  if (!is.element(ca, layout$edges$child)) {
+    warning("draw.branch() selected root branch, no action taken.")
+  } else {
+    e <- layout$edges[layout$edges$child==mrca, ]
+    segments(e$x0, e$y0, e$x1, e$y1, col, ...)
+  }
+}
+
+
+#' draw.clade
+#' 
+#' Locate common ancestor in the tree given a set of tip labels
+#' and draw the subtree (clade) of all descendants.
+#' 
+#' @param layout:  an S3 object of class `phyloLayout`
+#' @param tips:  a character vector of tip labels
+#' 
+#' @export
+draw.clade <- function(layout, tips, col='red', ...) {
+  unmatched <- !is.element(tips, layout$nodes$label)
+  if (any(unmatched)) {
+    stop("Error: not all tip labels found in tree layout:")
+    cat(tips[!unmatched])
+  }
+  
+  # find most recent common ancestor
+  idx <- sapply(tips, function(l) which(layout$nodes$label==l))
+  traj <- lapply(idx, function(i) .climb.tree(i, edges))
+  common <- Reduce(intersect, traj)
+  if (length(common) < 1) {
+    stop("Error: Failed to locate common ancestor of tips ", tips)
+  }
+  
+  clade <- setdiff(Reduce(union, traj), common)
+  e <- layout$edges[is.element(layout$edges$child, clade), ]
+  segments(e$x0, e$y0, e$x1, e$y1, col, ...)
+  
+  # do tips as well
+  e <- layout$edges[is.element(layout$edges$child, idx), ]
+  segments(e$x0, e$y0, e$x1, e$y1, col, ...)
+}
