@@ -135,7 +135,9 @@ draw.arc <- function(x, y, theta0, theta1, r0, r1=NA, n=64, ...) {
 #' 
 #' @param x: numeric vector or matrix of non-negative values
 #' @param offset: horizontal location of bars relative to origin
-#' @param width: 
+#' @param width: width of the drawing area for the stacked bars
+#' @param space: inset from the bounds of the drawing area
+#' @param col: vector of colours
 #' @export
 draw.stack <- function(x, xoffset, yoffset=0, width=1, space=0.1, col=NA, ...) {
   if (is.vector(x)) {
@@ -153,4 +155,19 @@ draw.stack <- function(x, xoffset, yoffset=0, width=1, space=0.1, col=NA, ...) {
       xoffset <- xoffset + width
     }
   }
+}
+
+
+#' rotate.layout
+#' 
+#' @param layout: an object of S3 class phyloLayout
+#' @param angle: rotation angle in degrees
+#' @return rotated phyloLayout object
+#' 
+rotate.layout <- function(layout, angle) {
+  rotation.mx <- matrix(
+    c(cos(angle), -sin(angle), sin(angle), cos(angle)),
+    ncol=2, byrow=T)
+  nodes.xy <- rbind(layout$nodes$x, layout$nodes$y)
+  result <- rotation.mx %*% nodes.xy
 }
