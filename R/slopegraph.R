@@ -38,6 +38,9 @@
 slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA,
                        colorize=F, pal=c('firebrick', 'steelblue'), shim=0.5, 
                        cex.text=0.8, ...) {
+  # save user's current mar settings
+  last.mar <- par()$mar
+  
   # check if 'x' holds a matrix or dataframe
   if (is.na(y)) {
     if (is.element(class(x), c('data.frame', 'matrix')) && ncol(x)==2) {
@@ -93,4 +96,7 @@ slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA,
       lines(x=c(1,2), y=r, type=type, col=col, ...)
     }
   })
+  
+  # restore user's previous mar settings
+  par(mar=last.mar)
 }

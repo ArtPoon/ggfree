@@ -20,6 +20,9 @@
 
 \item{cex.lab:}{character expansion factor for text}
 
+\item{offset:}{float, additional spacing between tree tip and label; 
+defaults to 0.}
+
 \item{...:}{additional graphical parameters passed to `text`}
 }
 \description{

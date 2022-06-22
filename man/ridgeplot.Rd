@@ -18,8 +18,10 @@ ridgeplot(
   density.args = list(),
   add.grid = F,
   grid.args = list(),
-  extend.lines = TRUE,
-  add = FALSE,
+  extend.lines = T,
+  add = F,
+  freq = F,
+  prev = NA,
   ...
 )
 }
@@ -55,6 +57,11 @@ colours if there are fewer than the number of groups in 'x'.}
 Defaults to TRUE.}
 
 \item{add:}{if TRUE, add the series of densities to existing plot.}
+
+\item{prev:}{numeric, factors to use in combination with add=TRUE to rescale 
+heights of next set of densities}
+
+\item{freq:}{if TRUE, scale each ridgeplot in proportion to sample size.}
 
 \item{...:}{additional arguments for plot()}
 }

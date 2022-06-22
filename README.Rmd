@@ -32,6 +32,7 @@ Long-time users of R who are accustomed to building plots with the latter may fi
 
 The overall purpose of `ggfree` is to make it easier to generate plots in the style of [ggplot2](https://ggplot2.tidyverse.org/) and its extensions, without ever actually using any ggplot2 code.
 
+![](man/figures/collage.png)
 
 ## Installation
 
@@ -47,29 +48,6 @@ devtools::install_github("ArtPoon/ggfree")
 
 
 ## Examples
-
-### Fancy gridlines
-
-The major and minor gridlines on a shaded background is one of the distinctive characteristics of the default `ggplot2` theme.
-This implementation uses `rect` and `abline` to obtain the same look.
-```{r}
-require(ggfree)
-# prepare the plot region
-plot(NA, xlim=range(faithful$eruptions), ylim=range(faithful$waiting),
-     xlab='Duration of eruption (mins)', ylab='Waiting time (mins)')
-add.grid()  # <-- a ggfree function!
-points(faithful$eruptions, faithful$waiting, pch=21, bg='white')
-```
-
-We can also vary the colours, turn off major or minor gridlines, or skip vertical or horizontal lines:
-```{r}
-plot(NA, xlim=range(faithful$eruptions), ylim=range(faithful$waiting),
-     xlab='Duration of eruption (mins)', ylab='Waiting time (mins)')
-# now with non-default arguments!
-add.grid(mode='x', bg.col='seashell2', lwd.minor=0)
-points(faithful$eruptions, faithful$waiting, pch=21, bg='white')
-```
-
 
 ### Slopegraphs
 
@@ -165,8 +143,21 @@ In this example, we're going to make use of the `add.alpha` function in `ggfree:
 par(mar=c(5,5,1,1))
 pal <- add.alpha(brewer.pal(3, 'Set1'), 0.5)
 ridgeplot(split(iris$Sepal.Length, iris$Species), step=0.4, col='white', 
-fill=pal, lwd=2, xlab='Sepal length', cex.lab=1.2)
+          fill=pal, lwd=2, xlab='Sepal length', cex.lab=1.2)
 ```
+
+
+### Stacked area plots
+
+[Stacked area plots](https://en.wikipedia.org/wiki/Area_chart) are similar to stacked barplots (obtained by calling `barplot` with a matrix), but drawing polygons that span the horizontal range of the plot instead of separate rectangles.
+
+This example uses base R dataset that comprises the daily closing prices of major stock markets in Europe:
+```{r}
+stackplot(EuStockMarkets, xlab='Days (1991-1998)', 
+          ylab='Daily Closing Price', bty='n')
+```
+
+A useful aesthetic device is to separate the baseline from the horizontal axis such that the areas flow both below and above a central axis.
 
 
 ## Trees

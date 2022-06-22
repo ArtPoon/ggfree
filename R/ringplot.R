@@ -123,11 +123,15 @@ sunburst <- function(x) {
 #'                   use these to label the outer edge of each sector.
 #' @param pad.names: extra distance from origin for labels (default 0.05)
 #' @param cex.names: character expansion factor for labels (default 0.8)
+#' @param col.names: color to pass to text(), defaults to black
+#' @param border: color to draw border, passed to polygon(); default black
+#' @param las: 1, horizontal (default); 2, perpendicular (along radius)
 #' @param ...: additional arguments passed to the \code{plot} function.
 #'  
 #' @export
 polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, space=0, col=NA, 
-                      use.names=FALSE, pad.names=0.05, cex.names=0.8, ...) {
+                      use.names=FALSE, pad.names=0.05, cex.names=0.8, col.names=NULL,
+                      border='black', las=1, ...) {
   if (!is.numeric(obj)) {
     stop("obj must be a numeric vector or matrix, or a table")
   }
@@ -163,7 +167,8 @@ polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, space=0, col=NA,
     dh <- dh0 - space[i]  # change in arc length
     r1 <- sqrt(r0*r0 + 2*obj[,i]/dh0)
     for (j in 1:n.sect) {
-      draw.arc(x, y, theta0=h[j], theta1=h[j]+dh, r0=r0[j], r1=r1[j], col=pal[i])
+      draw.arc(x, y, theta0=h[j], theta1=h[j]+dh, r0=r0[j], r1=r1[j], 
+               col=pal[i], border=border)
     }
     # update r0
     r0 <- r1
@@ -178,10 +183,25 @@ polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, space=0, col=NA,
       labels <- row.names(obj)
     }
     h.mids <- (h+dh0/2)[1:n.sect]
-    . <- Map(text, labels, 
-             x = x+(r0+pad.names)*cos(h.mids), 
-             y = y+(r0+pad.names)*sin(h.mids), 
-             adj=0.5, srt=h.mids/(2*pi)*360-90, cex=cex.names)
+    angle <- h.mids / (2*pi)*360 - ifelse(las==1, 90, 0)
+    if (las==2) {
+      angle <- sapply(angle, function(x) {
+        ifelse (x>90 && x<270, x+180, x) 
+      })
+    }
+
+    for (i in 1:length(labels)) {
+      text(x = x+(r0[i]+pad.names)*cos(h.mids[i]), 
+           y = y+(r0[i]+pad.names)*sin(h.mids[i]), 
+           labels = labels[i],
+           adj=ifelse(las==1, 0.5, 
+                      ifelse(h.mids[i]%%(2*pi)>pi/2 && 
+                               h.mids[i]%%(2*pi)<(1.5*pi), 1, 0)), 
+           srt=angle[i],
+           cex=cex.names,
+           col=col.names
+           )
+    }
   }
 }
 
