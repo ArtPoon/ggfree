@@ -34,6 +34,7 @@
 #' @param fill: character vector of R colours for filling densities.  Will recycle
 #' colours if there are fewer than the number of groups in 'x'.
 #' @param lwd: line width for drawing density curves and line segments.
+#' @param lty: line style for drawing density curves
 #' @param density.args: list of optional arguments for density().
 #' @param add.grid: if TRUE, call add.grid() before drawing densities
 #' @param grid.args: list of optional arguments for add.grid()
@@ -47,7 +48,7 @@
 #' 
 #' @export
 ridgeplot <- function(x, xlim=NA, labels=NA, yaxt='s', xlab=NA, ylab=NA, step=0.2,
-                      col=NA, fill=NA, lwd=1, density.args=list(),
+                      col=NA, fill=NA, lwd=1, lty=1, density.args=list(),
                       add.grid=F, grid.args=list(), extend.lines=T, add=F, 
                       freq=F, prev=NA, ...) 
   {
@@ -127,7 +128,13 @@ ridgeplot <- function(x, xlim=NA, labels=NA, yaxt='s', xlab=NA, ylab=NA, step=0.
     plot(NA, xlim=xlim, ylim=c(step, max(all.y, na.rm=T)), xlab=xlab, ylab=ylab, yaxt='n', ...)
     
     # override y-axis labels
-    if (yaxt != 'n') axis(side=2, at=seq(step, n*step, step), labels=labels, las=2)
+    if (yaxt != 'n') {
+      if (step==0) {
+        axis(side=2, at=pretty(seq(0, max(all.y, na.rm=T), length.out=10)), ...)
+      } else {
+        axis(side=2, at=seq(step, n*step, step), labels=labels, las=2) 
+      }
+    }
     
     # optional grid
     if (add.grid) {
@@ -156,7 +163,7 @@ ridgeplot <- function(x, xlim=NA, labels=NA, yaxt='s', xlab=NA, ylab=NA, step=0.
     ymin <- c(ymin, min(y))
     
     polygon(kd$x, y, col=bg[i], border=NA)
-    lines(kd$x, y, col=pal[i], lwd=lwd)
+    lines(kd$x, y, col=pal[i], lwd=lwd, lty=ifelse(length(lty)==1, lty, lty[i]))
     
     # extend density curve to full horizontal range
     if (extend.lines) {
