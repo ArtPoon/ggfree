@@ -68,7 +68,7 @@ slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA,
   }
   
   # prepare plot region
-  par(mar=c(5,5,2,5))
+  #par(mar=c(5,5,2,5))
   plot(NA, xlim=c(ifelse(type=='t', 1-shim, 0.9), 2+shim), 
        ylim=range(c(x, y)), 
        xaxt='n', yaxt=ifelse(type=='t', 'n', 's'), bty='n', 
