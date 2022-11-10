@@ -598,14 +598,27 @@ lines.phyloLayout <- function(obj, col='grey50', shade=TRUE, ...) {
 #' @param cex.lab:  character expansion factor for text
 #' @param offset:  float, additional spacing between tree tip and label; 
 #'                 defaults to 0.
+#' @param col:  vector of colour values, should be in same order as labels; 
+#'              if a single value, is applied to all labels; defaults to 'black'
 #' @param ...:  additional graphical parameters passed to `text`
 #' 
 #' @export
-text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, ...) {
+text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, 
+                             col='black', ...) {
   
   # filter node data frame
   tips <- obj$nodes[obj$nodes$n.tips==0, ]
   internals <- obj$nodes[obj$nodes$n.tips>0, ]
+  
+  if (length(col) == 1) {
+    col <- rep(col, nrow(obj$nodes))
+  } 
+  else if (length(col) < nrow(obj$nodes)) {
+    warning("vector `col` is shorter than number of labels, recycling")
+    col <- rep(col, length.out=nrow(obj$nodes))
+  }
+  col.tips <- col[1:nrow(tips)]
+  col.ints <- col[(nrow(tips)+1):nrow(obj$nodes)]
   
   # allow drawing into margins of plot device
   par(xpd=NA)
@@ -616,12 +629,12 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, .
       x <- tips$x + offset
       if (align) { x <- max(tips$x) + offset }
       text(x=x, y=tips$y, labels=paste0(' ', tips$label), 
-           adj=0, cex=cex.lab, ...)
+           adj=0, cex=cex.lab, col=col.tips, ...)
     }
     if (is.element(label, c('i', 'b'))) {
       # draw internal labels
       text(x=internals$x, y=internals$y, labels=paste0(' ', internals$label), 
-           adj=0, cex=cex.lab, ...)
+           adj=0, cex=cex.lab, col=col.ints, ...)
     }
   }
   else if (obj$layout == 'radial' | obj$layout == 'equal.angle') {
@@ -636,7 +649,7 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, .
         
         text(x=tip$x, y=tip$y, labels=tip$label, 
              srt=tip$angle/pi*180, adj=as.integer(tip$rotated), 
-             cex=cex.lab, ...)
+             cex=cex.lab, col=col.tips[i], ...)
       }
     }
     if (is.element(label, c('i', 'b'))) {
@@ -649,7 +662,7 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, .
         
         text(x=node$x, y=node$y, labels=node$label, 
              srt=node$angle/pi*180, adj=as.integer(node$rotated), 
-             cex=cex.lab, ...) 
+             cex=cex.lab, col=col.ints[i], ...) 
       }
     }
   }
