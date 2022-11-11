@@ -1003,26 +1003,36 @@ draw.branch <- function(layout, tips, col='red', ...) {
 #' @param tips:  a character vector of tip labels
 #' 
 #' @export
-draw.clade <- function(layout, tips, col='red', ...) {
-  unmatched <- !is.element(tips, layout$nodes$label)
+draw.clade <- function(obj, tips, col='red', ...) {
+  unmatched <- !is.element(tips, obj$nodes$label)
   if (any(unmatched)) {
     stop("Error: not all tip labels found in tree layout:")
     cat(tips[!unmatched])
   }
   
   # find most recent common ancestor
-  idx <- sapply(tips, function(l) which(layout$nodes$label==l))
-  traj <- lapply(idx, function(i) .climb.tree(i, edges))
+  idx <- sapply(tips, function(l) which(obj$nodes$label==l))
+  traj <- lapply(idx, function(i) .climb.tree(i, obj$edges))
   common <- Reduce(intersect, traj)
   if (length(common) < 1) {
     stop("Error: Failed to locate common ancestor of tips ", tips)
   }
   
   clade <- setdiff(Reduce(union, traj), common)
-  e <- layout$edges[is.element(layout$edges$child, clade), ]
+  e <- obj$edges[is.element(obj$edges$child, c(idx, clade)), ]
   segments(e$x0, e$y0, e$x1, e$y1, col, ...)
-  
-  # do tips as well
-  e <- layout$edges[is.element(layout$edges$child, idx), ]
-  segments(e$x0, e$y0, e$x1, e$y1, col, ...)
+
+  if (obj$layout == 'rectangular') {
+    parents <- sapply(e$parent, function(p) which(obj$edges$child==p))
+    segments(x0=e$x0, y0=e$y0, y1=obj$edges$y0[parents], col=col, ...)
+  }
+  else if (obj$layout == 'radial') {
+    nodes <- obj$nodes[e$child,]
+    parents <- sapply(e$parent, function(p) which(obj$edges$child==p))
+    pnodes <- obj$nodes[obj$edges$child[parents],]
+    for (i in 1:nrow(nodes)) {
+      draw.arc(x=0, y=0, theta0=nodes$angle[i], theta1=pnodes$angle[i], 
+               r0=pnodes$r[i], col=col, ...)      
+    }
+  }
 }
