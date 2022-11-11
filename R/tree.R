@@ -87,31 +87,37 @@ as.phyloData <- function(phy, unscaled=FALSE) {
 #' @return numeric vector of length Nnode(phy), sorted in preorder
 #' @export
 count.tips <- function(phy) {
-  ntips <- list()
-  for (i in 1:Ntip(phy)) {
-    ntips[i] <- 1
+  # check inputs
+  if (!is.element('phylo', class(phy))) {
+    stop("`phy` must be an object of class ape::phylo")
   }
-  # assumes that internal nodes are sorted for preorder traversal
-  # i.e., root node has lowest index
-  tryCatch(
-    {
-      for (i in seq(Ntip(phy)+Nnode(phy), Ntip(phy)+1, -1)) {
-        ntips[i] <- sum(sapply(phy$edge[phy$edge[,1]==i, 2], 
-                               function(j) ntips[[j]]))
-      }
-    },
-    error=function(cond) {
-      # phangorn::midpoint does something weird to node indices
-      phy <- read.tree(text=write.tree(phy))
-      ntips <- list()
-      for (i in 1:Ntip(phy)) { ntips[i] <- 1 }
-      for (i in seq(Ntip(phy)+Nnode(phy), Ntip(phy)+1, -1)) {
-        ntips[i] <- sum(sapply(phy$edge[phy$edge[,1]==i, 2], 
-                               function(j) ntips[[j]]))
-      }
+  if(!all(table(phy$edge[,2])==1)) {
+    stop("Each node index should appear only once in phy$edge[,2]")
+  }
+  
+  check.idx <- sapply(1:nrow(phy$edge), function(i) {
+    cidx <- phy$edge[i,2]
+    if (is.element(cidx, phy$edge[,1])) {
+      j <- min(which(phy$edge[,1]==cidx), na.rm=T)
+      return(i < j)
     }
-  )
-  return(unlist(ntips)[(Ntip(phy)+1):length(ntips)])
+    return(NA)
+    })
+  if (!all(check.idx, na.rm=TRUE)) {
+    stop("All nodes must appear as child (phy$edge[,2]) before parent (phy$edge[,1])")
+  }
+         
+  ntips <- rep(0, Ntip(phy) + Nnode(phy))
+  for (i in seq(nrow(phy$edge), 1)) {
+    parent <- phy$edge[i, 1]
+    child <- phy$edge[i, 2]
+    if (child <= Ntip(phy)) {
+      ntips[parent] <- ntips[parent] + 1  # child is a tip
+    } else {
+      ntips[parent] <- ntips[parent] + ntips[child]
+    }
+  }
+  return(ntips[(Ntip(phy)+1):length(ntips)])
 }
 
 
