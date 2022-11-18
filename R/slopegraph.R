@@ -25,6 +25,7 @@
 #' @param y: numeric vector of values to plot on the right
 #' @param type: 'b' displays both points and lines; 'l' displays lines only.
 #'              't' replaces points with numeric values, as per Tufte.
+#'              'x' draws lines and box-and-whiskers
 #' @param names.arg: optional names for labeling the x-axis
 #' @param xlab: label for x-axis, as in generic \code{plot()}. Defaults to 'Groups'.
 #' @param ylab: label for y-axis, as in generic \code{plot()}. Defaults to \code{NA}.
@@ -60,7 +61,7 @@ slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA,
   if (length(x) != length(y)) {
     stop("x and y must be of equal lengths")
   }
-  if (!is.na(names.arg) && (length(names.arg) != 2)) {
+  if (all(!is.na(names.arg)) && (length(names.arg) != 2)) {
     stop("names must be character vector of length 2")
   }
   if (!is.numeric(x) || !is.numeric(y)) {
