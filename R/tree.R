@@ -87,31 +87,37 @@ as.phyloData <- function(phy, unscaled=FALSE) {
 #' @return numeric vector of length Nnode(phy), sorted in preorder
 #' @export
 count.tips <- function(phy) {
-  ntips <- list()
-  for (i in 1:Ntip(phy)) {
-    ntips[i] <- 1
+  # check inputs
+  if (!is.element('phylo', class(phy))) {
+    stop("`phy` must be an object of class ape::phylo")
   }
-  # assumes that internal nodes are sorted for preorder traversal
-  # i.e., root node has lowest index
-  tryCatch(
-    {
-      for (i in seq(Ntip(phy)+Nnode(phy), Ntip(phy)+1, -1)) {
-        ntips[i] <- sum(sapply(phy$edge[phy$edge[,1]==i, 2], 
-                               function(j) ntips[[j]]))
-      }
-    },
-    error=function(cond) {
-      # phangorn::midpoint does something weird to node indices
-      phy <- read.tree(text=write.tree(phy))
-      ntips <- list()
-      for (i in 1:Ntip(phy)) { ntips[i] <- 1 }
-      for (i in seq(Ntip(phy)+Nnode(phy), Ntip(phy)+1, -1)) {
-        ntips[i] <- sum(sapply(phy$edge[phy$edge[,1]==i, 2], 
-                               function(j) ntips[[j]]))
-      }
+  if(!all(table(phy$edge[,2])==1)) {
+    stop("Each node index should appear only once in phy$edge[,2]")
+  }
+  
+  check.idx <- sapply(1:nrow(phy$edge), function(i) {
+    cidx <- phy$edge[i,2]
+    if (is.element(cidx, phy$edge[,1])) {
+      j <- min(which(phy$edge[,1]==cidx), na.rm=T)
+      return(i < j)
     }
-  )
-  return(unlist(ntips)[(Ntip(phy)+1):length(ntips)])
+    return(NA)
+    })
+  if (!all(check.idx, na.rm=TRUE)) {
+    stop("All nodes must appear as child (phy$edge[,2]) before parent (phy$edge[,1])")
+  }
+         
+  ntips <- rep(0, Ntip(phy) + Nnode(phy))
+  for (i in seq(nrow(phy$edge), 1)) {
+    parent <- phy$edge[i, 1]
+    child <- phy$edge[i, 2]
+    if (child <= Ntip(phy)) {
+      ntips[parent] <- ntips[parent] + 1  # child is a tip
+    } else {
+      ntips[parent] <- ntips[parent] + ntips[child]
+    }
+  }
+  return(ntips[(Ntip(phy)+1):length(ntips)])
 }
 
 
@@ -598,14 +604,27 @@ lines.phyloLayout <- function(obj, col='grey50', shade=TRUE, ...) {
 #' @param cex.lab:  character expansion factor for text
 #' @param offset:  float, additional spacing between tree tip and label; 
 #'                 defaults to 0.
+#' @param col:  vector of colour values, should be in same order as labels; 
+#'              if a single value, is applied to all labels; defaults to 'black'
 #' @param ...:  additional graphical parameters passed to `text`
 #' 
 #' @export
-text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, ...) {
+text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, 
+                             col='black', ...) {
   
   # filter node data frame
   tips <- obj$nodes[obj$nodes$n.tips==0, ]
   internals <- obj$nodes[obj$nodes$n.tips>0, ]
+  
+  if (length(col) == 1) {
+    col <- rep(col, nrow(obj$nodes))
+  } 
+  else if (length(col) < nrow(obj$nodes)) {
+    warning("vector `col` is shorter than number of labels, recycling")
+    col <- rep(col, length.out=nrow(obj$nodes))
+  }
+  col.tips <- col[1:nrow(tips)]
+  col.ints <- col[(nrow(tips)+1):nrow(obj$nodes)]
   
   # allow drawing into margins of plot device
   par(xpd=NA)
@@ -616,12 +635,12 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, .
       x <- tips$x + offset
       if (align) { x <- max(tips$x) + offset }
       text(x=x, y=tips$y, labels=paste0(' ', tips$label), 
-           adj=0, cex=cex.lab, ...)
+           adj=0, cex=cex.lab, col=col.tips, ...)
     }
     if (is.element(label, c('i', 'b'))) {
       # draw internal labels
       text(x=internals$x, y=internals$y, labels=paste0(' ', internals$label), 
-           adj=0, cex=cex.lab, ...)
+           adj=0, cex=cex.lab, col=col.ints, ...)
     }
   }
   else if (obj$layout == 'radial' | obj$layout == 'equal.angle') {
@@ -636,7 +655,7 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, .
         
         text(x=tip$x, y=tip$y, labels=tip$label, 
              srt=tip$angle/pi*180, adj=as.integer(tip$rotated), 
-             cex=cex.lab, ...)
+             cex=cex.lab, col=col.tips[i], ...)
       }
     }
     if (is.element(label, c('i', 'b'))) {
@@ -649,7 +668,7 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, .
         
         text(x=node$x, y=node$y, labels=node$label, 
              srt=node$angle/pi*180, adj=as.integer(node$rotated), 
-             cex=cex.lab, ...) 
+             cex=cex.lab, col=col.ints[i], ...) 
       }
     }
   }
@@ -699,23 +718,60 @@ text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, .
 #' and y- coordinates for tips and internal nodes.
 #' 
 #' @param obj:  S3 object of class `phyloLayout`
-#' @param ...:  additional graphical parameters to pass to 
-#'        points()
+#' @param type:  specify 'b' to plot both tips and internal nodes (default);
+#'               't' plots only tips, and 'i' plots only internal nodes.
+#'               NOTE: any additional parameters (`...`) will be interpreted 
+#'               accordingly!
+#' @param offset:  float, amount to draw points away from nodes.  This is 
+#'                 generally most useful for tips (type='t').  Suported for all
+#'                 layout algorithms.
+#' @param ...:  additional graphical parameters to pass to points()
 #'
 #' @examples
-#' # the structSI `phylo` object was generated by simulating
-#' # an epidemic within a structured population
-#' l <- tree.layout(structSI, type='r') 
-#' plot(l)
-#' 
-#' # highlight nodes that represent transmission or migration events
-#' cex <- as.integer(structSI$event.type %in% c('transmission', 'migration'))
-#' bg <- ifelse(structSI$event.type=='transmission', 'dodgerblue', 'salmon')
-#' points(l, cex=cex, pch=21, bg=bg)
+#' require(ggfree)
+#' set.seed(1)
+#' phy <- rtree(20)
+#' L <- tree.layout(phy, 'u')
+#' plot(L, label='n')
+#' points(L, type='t', pch=21, bg=hcl.colors(20), cex=1.5, offset=0.2, xpd=NA)
 #' 
 #' @export
-points.phyloLayout <- function(obj, ...) {
-  points(x=obj$nodes$x, y=obj$nodes$y, ...)
+points.phyloLayout <- function(obj, type='b', offset=0, ...) {
+  x <- obj$nodes$x
+  y <- obj$nodes$y
+  
+  if (offset != 0) {
+    if (obj$layout == 'rectangular' | obj$layout == 'slanted') {
+      x <- x + offset
+    }
+    else if (obj$layout == 'radial') {
+      x <- (obj$nodes$r + offset) * cos(obj$nodes$angle)
+      y <- (obj$nodes$r + offset) * sin(obj$nodes$angle)
+    }
+    else if (obj$layout == 'equal.angle') {
+      x <- x + offset * sin(obj$nodes$angle)
+      y <- y + offset * cos(obj$nodes$angle)
+    }
+    else {
+      stop("Unrecognized layout", obj$layout, "in points.phyloLayout()")
+    }
+  }
+  
+  if (type=='b') {
+    points(x=x, y=y, ...)    
+  }
+  else {
+    is.tip <- (obj$nodes$n.tips == 0)
+    if (type=='t') {
+      points(x=x[is.tip], y=y[is.tip], ...)
+    }
+    else if (type == 'i') {
+      points(x=x[!is.tip], y=y[!is.tip], ...)
+    }
+    else {
+      stop("Unrecognized type", type , "in points.phyloLayout()")
+    }
+  } 
 }
 
 
@@ -984,26 +1040,37 @@ draw.branch <- function(layout, tips, col='red', ...) {
 #' @param tips:  a character vector of tip labels
 #' 
 #' @export
-draw.clade <- function(layout, tips, col='red', ...) {
-  unmatched <- !is.element(tips, layout$nodes$label)
+draw.clade <- function(obj, tips, col='red', ...) {
+  unmatched <- !is.element(tips, obj$nodes$label)
   if (any(unmatched)) {
     stop("Error: not all tip labels found in tree layout:")
     cat(tips[!unmatched])
   }
   
   # find most recent common ancestor
-  idx <- sapply(tips, function(l) which(layout$nodes$label==l))
-  traj <- lapply(idx, function(i) .climb.tree(i, edges))
+  idx <- sapply(tips, function(l) which(obj$nodes$label==l))
+  traj <- lapply(idx, function(i) .climb.tree(i, obj$edges))
   common <- Reduce(intersect, traj)
   if (length(common) < 1) {
     stop("Error: Failed to locate common ancestor of tips ", tips)
   }
   
   clade <- setdiff(Reduce(union, traj), common)
-  e <- layout$edges[is.element(layout$edges$child, clade), ]
+  e <- obj$edges[is.element(obj$edges$child, c(idx, clade)), ]
   segments(e$x0, e$y0, e$x1, e$y1, col, ...)
-  
-  # do tips as well
-  e <- layout$edges[is.element(layout$edges$child, idx), ]
-  segments(e$x0, e$y0, e$x1, e$y1, col, ...)
+
+  if (obj$layout == 'rectangular') {
+    parents <- sapply(e$parent, function(p) which(obj$edges$child==p))
+    segments(x0=e$x0, y0=e$y0, y1=obj$edges$y0[parents], col=col, ...)
+  }
+  else if (obj$layout == 'radial') {
+    nodes <- obj$nodes[e$child,]
+    parents <- sapply(e$parent, function(p) which(obj$edges$child==p))
+    pnodes <- obj$nodes[obj$edges$child[parents],]
+    for (i in 1:nrow(nodes)) {
+      draw.arc(x=0, y=0, theta0=nodes$angle[i], theta1=pnodes$angle[i], 
+               r0=pnodes$r[i], col=col, ...)      
+    }
+  }
 }
+
