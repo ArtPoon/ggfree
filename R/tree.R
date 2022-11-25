@@ -895,9 +895,20 @@ draw.guidelines <- function(obj, lty=3, ...) {
 #' @param col:  a vector of colours that maps to factor levels in `z`
 #' @param border:  colour for border of rectangles in grid
 #' @param xaxt:  if 'n', suppress drawing of axis and labels
+#' @param lty:  line type for rect, defaults to par('lty')
+#' @param lwd:  line width for rect, defaults to par('lwd')
 #' 
 #' @export
-image.phyloLayout <- function(obj, z, xlim=NA, col=NA, border='white', xaxt='y', ...) {
+image.phyloLayout <- function(obj, z, xlim=NA, col=NA, border='white', xaxt='y', 
+                              lty=NA, lwd=NA, ...) {
+  # resolve default arguments
+  if (all(is.na(lty))) {
+    lty <- par('lty')
+  }
+  if (all(is.na(lwd))) {
+    lwd <- par('lwd')
+  }
+  
   # recode contents of `z` as integer-valued matrix
   if (is.matrix(z)) {
     z <- apply(z, 2, function(x) as.integer(as.factor(x)))  
@@ -940,7 +951,7 @@ image.phyloLayout <- function(obj, z, xlim=NA, col=NA, border='white', xaxt='y',
         if (is.na(val)) next
         rect(xleft = x[j], xright = x[j+1], 
              ybottom = y[i]-0.5, ytop = y[i]+0.5,
-             border = border, col = col[val])
+             border = border, col = col[val], lwd=lwd, lty=lty)
       }
     }
     
@@ -974,7 +985,7 @@ image.phyloLayout <- function(obj, z, xlim=NA, col=NA, border='white', xaxt='y',
         if (is.na(val)) next
         draw.arc(x = 0, y = 0, theta0 = angles[i]-d.theta, 
                  theta1 = angles[i]+d.theta, r0 = r[j], r1 = r[j+1],
-                 col = col[val], border = border)
+                 col = col[val], border = border, lty=lty, lwd=lwd)
       }
     }
   }
