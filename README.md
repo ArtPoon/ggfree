@@ -21,17 +21,42 @@ extensions, without ever actually using any ggplot2 code.
 
 ## Installation
 
-For the time being, the simplest method is to use the `devtools`
-package:
+-   `ggfree` requires the package
+    [`ape`](https://cran.r-project.org/web/packages/ape/index.html),
+    which you can install by running the command
+    `install.packages('ape')` within R.
 
-``` r
-# install.packages('devtools')  # if you haven't already installed devtools
-require(devtools)
-devtools::install_github("ArtPoon/ggfree")
-```
+-   The simplest way to install `ggfree` is to download this package and
+    then install it on the command line. You can use the GitHub web
+    interface to download the latest version of this package as a ZIP
+    archive, by clicking on the green *Code* button and then selecting
+    the *Download ZIP* option on the contextual menu that appears. If
+    you have the [`git`](https://git-scm.com/) version control program
+    installed on your computer, then you can navigate to the desired
+    location in your filesystem and run the command:
+    `git clone https://github.com/ArtPoon/ggfree`
 
-(You could also simply copy-paste the functions you want to use into
-your R script.)
+    In either case, navigate to the `ggfree` directory in your Terminal
+    app and run the command:
+
+    ``` console
+    art@Wernstrom ggfree % R CMD INSTALL .
+    * installing to library ‘/Library/Frameworks/R.framework/Versions/4.0/Resources/library’
+    ```
+
+-   You can also use the
+    [`devtools`](https://cran.r-project.org/web/packages/devtools/index.html)
+    package to install `ggfree` within R. If you already have `devtools`
+    installed in your R environment, then you can simply run:
+
+    ``` r
+    # install.packages('devtools')  # if you haven't already installed devtools
+    require(devtools)
+    devtools::install_github("ArtPoon/ggfree")
+    ```
+
+    However, `devtools` is a large R package with many dependencies, so
+    I don’t recommend this method if you haven’t already installed it.
 
 ## Examples
 
