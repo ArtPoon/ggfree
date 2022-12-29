@@ -43,6 +43,11 @@
 #' @param type: determines baseline of stacked areas, defaults to 'n' 
 #'              for zero baseline (against horizontal axis); 't' applies
 #'              symmetric layout (ThemeRiver), 'w' applies wiggle layout.
+#' @param sort:  if TRUE, sort counts by marginal totals such that the most 
+#'               frequent types are drawn on the outside of the stack.  This is 
+#'               effective for stream plots, as the most frequent type 
+#'               otherwise drives the overall shape.  Defaults to FALSE (
+#'               plot by input order).
 #' @param spline: if TRUE, interpolate data points to draw areas with 
 #'                smoothed trendlines
 #' @param density: numeric, density of shading lines for each area;
@@ -58,9 +63,9 @@
 #' @param ...: additional arguments to pass to `plot` function
 #' 
 #' @export
-stackplot <- function(obj, x=NA, freq=TRUE, type='n', spline=FALSE, 
+stackplot <- function(obj, x=NA, freq=TRUE, type='n', sort=FALSE, spline=FALSE, 
                       density=NA, angle=NA, col=NA, border=NULL, 
-                      lwd=1, xlim=NA, ...) {
+                      lwd=1, xlim=NA, ylim=NA, ...) {
   # check inputs
   if (is.data.frame(obj)) {
     obj <- as.matrix(obj)
@@ -106,6 +111,16 @@ stackplot <- function(obj, x=NA, freq=TRUE, type='n', spline=FALSE,
   }
   n <- ncol(f)
   
+  # sort frequencies so that dominant types are external
+  if (sort) {
+    sums <- apply(f, 2, sum)
+    index <- order(sums)
+    ni <- length(index)
+    mid.ni <- n%/%2
+    fold <- c(index[ni:mid.ni], index[1:(mid.ni-1)])
+    f <- f[,fold]
+  }
+  
   # compute baseline
   if (type == 'n') {
     g0 <- rep(0, nrow(f))
@@ -128,10 +143,12 @@ stackplot <- function(obj, x=NA, freq=TRUE, type='n', spline=FALSE,
   
   # prepare plot region
   if (any(is.na(xlim))) {
-    # allows user to override this default
-    xlim <- range(x)
+    xlim <- range(x)  # allows user to override this default
   }
-  plot(NA, xlim=xlim, ylim=range(g), ...)
+  if (any(is.na(ylim))) {
+    ylim <- range(g)
+  }
+  plot(NA, xlim=xlim, ylim=ylim, ...)
   
   # default palette
   if (any(is.na(col))) {
@@ -155,5 +172,6 @@ stackplot <- function(obj, x=NA, freq=TRUE, type='n', spline=FALSE,
     polygon(x=xx, y=yy, density=density[i-1], 
             angle=angle[i-1], col=col[i-1], border=border, lwd=lwd)
   }
+  invisible(list(baseline=g0, ylim=range(g)))
 }
 

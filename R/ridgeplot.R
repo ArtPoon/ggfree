@@ -40,6 +40,8 @@
 #' @param extend.lines: whether to draw densities across the horizontal range of plot.  
 #' Defaults to TRUE.
 #' @param add: if TRUE, add the series of densities to existing plot.
+#' @param prev: numeric, factors to use in combination with add=TRUE to rescale 
+#'              heights of next set of densities
 #' @param freq: if TRUE, scale each ridgeplot in proportion to sample size.
 #' @param ...: additional arguments for plot()
 #' 
@@ -47,7 +49,7 @@
 ridgeplot <- function(x, xlim=NA, labels=NA, yaxt='s', xlab=NA, ylab=NA, step=0.2,
                       col=NA, fill=NA, lwd=1, density.args=list(),
                       add.grid=F, grid.args=list(), extend.lines=T, add=F, 
-                      freq=F, ...) 
+                      freq=F, prev=NA, ...) 
   {
   # check inputs
   if (is.list(x)) {
@@ -61,7 +63,7 @@ ridgeplot <- function(x, xlim=NA, labels=NA, yaxt='s', xlab=NA, ylab=NA, step=0.
   
   n <- length(x)  # number of groups
   samp.size <- sapply(x, length)
-  rescale <- samp.size #sqrt(samp.size)  # area increaes with square of height
+  rescale <- samp.size  #sqrt(samp.size)  # area increases with square of height
   rescale <- rescale / mean(rescale)
   
   if (any(is.na(labels))) {
@@ -97,19 +99,32 @@ ridgeplot <- function(x, xlim=NA, labels=NA, yaxt='s', xlab=NA, ylab=NA, step=0.
   
   if (!add) {
     # determine plot ranges from densities
-    all.x <- c(sapply(kdens, function(k) k$x))
+    all.x <- unlist(sapply(kdens, function(k) {
+      if (any(is.na(k))) {
+        return(NA)
+      } else {
+        return(k$x)
+      }
+    }))
     #all.y <- sapply(1:n, function(i) {
     #  ifelse(freq, kdens[[i]]$y * rescale[i] + i*step, kdens[[i]]$y + i*step)
     #  })
     all.y <- sapply(1:n, function(i) {
-      max(kdens[[i]]$y) * ifelse(freq, rescale[i], 1) + i*step
+      k <- kdens[[i]]
+      if (any(is.na(k))) {
+        return(NA)
+      } else {
+        return(max(k$y) * ifelse(freq, rescale[i], 1) + i*step)
+      }
     })
     
     # generate plot region
     if (any(is.na(xlim))) {
-      xlim <- range(all.x)
+      #xlim <- range(unlist(all.x), na.rm=T)
+      #sapply(all.x, function(k) ifelse(is.na(k), NA, k$x))
+      xlim <- range(all.x, na.rm=T)
     }
-    plot(NA, xlim=xlim, ylim=c(step, max(all.y)), xlab=xlab, ylab=ylab, yaxt='n', ...)
+    plot(NA, xlim=xlim, ylim=c(step, max(all.y, na.rm=T)), xlab=xlab, ylab=ylab, yaxt='n', ...)
     
     # override y-axis labels
     if (yaxt != 'n') axis(side=2, at=seq(step, n*step, step), labels=labels, las=2)
@@ -125,22 +140,29 @@ ridgeplot <- function(x, xlim=NA, labels=NA, yaxt='s', xlab=NA, ylab=NA, step=0.
   if (step < 0) {
     ordering <- 1:n
   }
+  ymin <- c()
   for (i in ordering) {
     kd <- kdens[[i]]
     if (length(kd) == 1 && is.na(kd)) next  # skip missing entry
     if (freq) {
       y <- kd$y*rescale[i] + i*step
     } else {
-      y <- kd$y + i*step      
+      y <- kd$y + i*step
+      if (add & all(!is.na(prev))) {
+        # scale to previous kernel densities
+        y <- kd$y * prev[i] + i*step
+      }
     }
+    ymin <- c(ymin, min(y))
     
     polygon(kd$x, y, col=bg[i], border=NA)
     lines(kd$x, y, col=pal[i], lwd=lwd)
     
     # extend density curve to full horizontal range
     if (extend.lines) {
-      segments(x0=min(all.x), x1=min(kd$x), y0=min(y), y1=min(y), col=pal[i], lwd=lwd)
-      segments(x0=max(kd$x), x1=max(all.x), y0=min(y), y1=min(y), col=pal[i], lwd=lwd)
+      segments(x0=min(unlist(all.x), na.rm=T), x1=min(kd$x), y0=min(y), y1=min(y), col=pal[i], lwd=lwd)
+      segments(x0=max(kd$x), x1=max(unlist(all.x), na.rm=T), y0=min(y), y1=min(y), col=pal[i], lwd=lwd)
     }
   }
+  invisible(ymin)  # return baselines
 }
