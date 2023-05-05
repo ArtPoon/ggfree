@@ -995,13 +995,20 @@ image.phyloLayout <- function(obj, z, xlim=NA, col=NA, border='white', xaxt='y',
 
 #' Traverse tree from given node (tip) to root, return 
 #' vector of indices.
-#' 
+#' @param node:  integer, index of child node
+#' @param edges:  data frame, from phyloLayout
+#' @param result:  integer, vector of parent nodes
+#' @param parents:  integer, vector of parent nodes that have 
+#'                  already been visited
 #' @keywords internal
-.climb.tree <- function(node, edges, result=c()) {
+.climb.up.tree <- function(node, edges, result=c(), parents=c()) {
   if (is.element(node, edges$child)) {
     parent <- edges$parent[edges$child==node]
+    if (is.element(parent, parents)) {
+      return(result)
+    }
     result <- c(result, parent)
-    result <- .climb.tree(parent, edges, result)
+    result <- .climb.up.tree(parent, edges, result, parents)
   }
   return(result)
 }
@@ -1026,7 +1033,7 @@ draw.branch <- function(layout, tips, col='red', ...) {
   
   # find most recent common ancestor
   idx <- sapply(tips, function(l) which(layout$nodes$label==l))
-  traj <- lapply(idx, function(i) .climb.tree(i, edges))
+  traj <- lapply(idx, function(i) .climb.up.tree(i, edges))
   common <- Reduce(intersect, traj)
   if (length(common) < 1) {
     stop("Error: Failed to locate common ancestor of tips ", tips)
@@ -1049,9 +1056,15 @@ draw.branch <- function(layout, tips, col='red', ...) {
 #' 
 #' @param layout:  an S3 object of class `phyloLayout`
 #' @param tips:  a character vector of tip labels
-#' 
+#' @param col:  colour for branches
+#' @param is.mono:  colour monophyletic clade (from common ancestor to 
+#'                  all descendant tips)
+#' @param max.tips:  int, finding common ancestor is very slow for 
+#'                   large numbers of tips, down-sampling to a 
+#'                   smaller number should obtain the same node 
+#'                   at a much faster rate (default 100)
 #' @export
-draw.clade <- function(obj, tips, col='red', ...) {
+draw.clade <- function(obj, tips, col='red', is.mono=TRUE, max.tips=100, ...) {
   unmatched <- !is.element(tips, obj$nodes$label)
   if (any(unmatched)) {
     stop("Error: not all tip labels found in tree layout:")
@@ -1059,13 +1072,33 @@ draw.clade <- function(obj, tips, col='red', ...) {
   }
   
   # find most recent common ancestor
-  idx <- sapply(tips, function(l) which(obj$nodes$label==l))
-  traj <- lapply(idx, function(i) .climb.tree(i, obj$edges))
+  some.tips <- tips
+  if (length(some.tips) > max.tips) {
+    some.tips <- sample(some.tips, size=max.tips)
+  }
+  idx <- sapply(some.tips, function(l) which(obj$nodes$label==l))
+  
+  #t0 <- Sys.time()
+  # sample paths from tips to root of tree
+  traj <- lapply(idx, function(i) .climb.up.tree(i, obj$edges))
+  ##traj <- Reduce(union, traj)
+  #print(Sys.time() - t0)
+
+  # this is the shared path to the root  
   common <- Reduce(intersect, traj)
   if (length(common) < 1) {
     stop("Error: Failed to locate common ancestor of tips ", tips)
   }
-  
+
+  # now retrieve non-overlapping paths to root
+  idx <- match(tips, obj$nodes$label) #sapply(tips, function(l) which(obj$nodes$label==l))
+  traj <- list()  # renamed traj2
+  parents <- c()
+  for (j in 1:length(idx)) {
+    this.traj <- .climb.up.tree(idx[j], edges=obj$edges, parents=parents)
+    parents <- union(parents, this.traj)
+    traj[[j]] <- this.traj
+  }
   clade <- setdiff(Reduce(union, traj), common)
   e <- obj$edges[is.element(obj$edges$child, c(idx, clade)), ]
   segments(e$x0, e$y0, e$x1, e$y1, col, ...)
