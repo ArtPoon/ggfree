@@ -1074,6 +1074,8 @@ draw.clade <- function(obj, tips, col='red', is.mono=TRUE, max.tips=100, ...) {
   # find most recent common ancestor
   some.tips <- tips
   if (length(some.tips) > max.tips) {
+    # down-sample tips to reduce compute time
+    # FIXME: this might fail if subtree is very unbalanced
     some.tips <- sample(some.tips, size=max.tips)
   }
   idx <- sapply(some.tips, function(l) which(obj$nodes$label==l))
@@ -1105,7 +1107,16 @@ draw.clade <- function(obj, tips, col='red', is.mono=TRUE, max.tips=100, ...) {
 
   if (obj$layout == 'rectangular') {
     parents <- sapply(e$parent, function(p) which(obj$edges$child==p))
-    segments(x0=e$x0, y0=e$y0, y1=obj$edges$y0[parents], col=col, ...)
+    root.idx <- which(sapply(parents, length)==0)
+    if (length(root.idx)) {
+      # clade includes root node, exclude
+      segments(x0=e$x0[-root.idx], y0=e$y0[-root.idx], 
+               y1=obj$edges$y0[unlist(parents)], col=col, ...)  
+    } 
+    else {
+      segments(x0=e$x0, y0=e$y0, y1=obj$edges$y0[unlist(parents)], 
+               col=col, ...)  
+    }
   }
   else if (obj$layout == 'radial') {
     nodes <- obj$nodes[e$child,]
