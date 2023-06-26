@@ -50,7 +50,7 @@
 ridgeplot <- function(x, xlim=NA, labels=NA, yaxt='s', xlab=NA, ylab=NA, step=0.2,
                       col=NA, fill=NA, lwd=1, lty=1, density.args=list(),
                       add.grid=F, grid.args=list(), extend.lines=T, add=F, 
-                      freq=F, prev=NA, ...) 
+                      freq=F, prev=NA, cex.axis=1, ...) 
   {
   # check inputs
   if (is.list(x)) {
@@ -132,7 +132,7 @@ ridgeplot <- function(x, xlim=NA, labels=NA, yaxt='s', xlab=NA, ylab=NA, step=0.
       if (step==0) {
         axis(side=2, at=pretty(seq(0, max(all.y, na.rm=T), length.out=10)), ...)
       } else {
-        axis(side=2, at=seq(step, n*step, step), labels=labels, las=2) 
+        axis(side=2, at=seq(step, n*step, step), labels=labels, las=2, cex.axis=cex.axis) 
       }
     }
     

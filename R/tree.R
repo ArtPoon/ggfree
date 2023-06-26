@@ -783,6 +783,7 @@ points.phyloLayout <- function(obj, type='b', offset=0, ...) {
 #' @param x0:  (optional) override default horizontal placement of bar
 #' @param y0:  (optional) override default vertical placement of bar.
 #'        Note both x and y need to be specified to override the default.
+#' @param dy:  (optional) override default spacing between bar and label.
 #' @param ...:  additional graphical parameters to pass to `segments`, 
 #'        such as `cex`, `col` and `lwd`.
 #' 
@@ -793,19 +794,21 @@ points.phyloLayout <- function(obj, type='b', offset=0, ...) {
 #' plot(Y)
 #' add.scalebar(Y, len=1)
 #' @export
-add.scalebar <- function(obj, len=1, x0=NA, y0=NA, lwd=2, ...) {
+add.scalebar <- function(obj, len=1, x0=NA, y0=NA, dy=NA, lwd=2, ...) {
   if (is.na(x0) | is.na(y0)) {
     # use default location
     mid.pt <- mean(range(obj$nodes$x))
     x0 <- mid.pt - len/2
     x1 <- mid.pt + len/2
-    y0 <- min(obj$nodes$y) - 1
+    #y0 <- min(obj$nodes$y) - 1
+    y0 <- min(obj$nodes$y) - dy
   } else {
     x1 <- x0+len
   }
+  if (is.na(dy)) dy <- 0.01*diff(range(obj$nodes$y))
   suppressWarnings({
-    segments(x0, y0, x1, lwd=lwd, ...)
-    text(x=mean(c(x0, x1)), y=y0-.7, label=len, ...)
+    segments(x0, y0, x1, lwd=lwd, xpd=NA, ...)
+    text(x=mean(c(x0, x1)), y=y0-dy, label=len, xpd=NA, ...)
   })
 }
 
@@ -1040,7 +1043,7 @@ draw.branch <- function(layout, tips, col='red', ...) {
   }
   mrca <- common[1]
   
-  if (!is.element(ca, layout$edges$child)) {
+  if (!is.element(mrca, layout$edges$child)) {
     warning("draw.branch() selected root branch, no action taken.")
   } else {
     e <- layout$edges[layout$edges$child==mrca, ]
@@ -1049,22 +1052,22 @@ draw.branch <- function(layout, tips, col='red', ...) {
 }
 
 
-#' draw.clade
+#' find.clade
 #' 
 #' Locate common ancestor in the tree given a set of tip labels
-#' and draw the subtree (clade) of all descendants.
+#' and return all edges in subtree (clade) of all descendants.
 #' 
-#' @param layout:  an S3 object of class `phyloLayout`
+#' @param obj:  an S3 object of class `phyloLayout`
 #' @param tips:  a character vector of tip labels
-#' @param col:  colour for branches
 #' @param is.mono:  colour monophyletic clade (from common ancestor to 
 #'                  all descendant tips)
 #' @param max.tips:  int, finding common ancestor is very slow for 
 #'                   large numbers of tips, down-sampling to a 
 #'                   smaller number should obtain the same node 
 #'                   at a much faster rate (default 100)
+#' @return integer vector indexing edge data frame in obj
 #' @export
-draw.clade <- function(obj, tips, col='red', is.mono=TRUE, max.tips=100, ...) {
+find.clade <- function(obj, tips, is.mono=TRUE, max.tips=100) {
   unmatched <- !is.element(tips, obj$nodes$label)
   if (any(unmatched)) {
     stop("Error: not all tip labels found in tree layout:")
@@ -1102,7 +1105,17 @@ draw.clade <- function(obj, tips, col='red', is.mono=TRUE, max.tips=100, ...) {
     traj[[j]] <- this.traj
   }
   clade <- setdiff(Reduce(union, traj), common)
-  e <- obj$edges[is.element(obj$edges$child, c(idx, clade)), ]
+  return(which(is.element(obj$edges$child, c(idx, clade))))
+}
+
+
+#' draw.clade
+#' @param obj: an S3 object of class `phyloLayout`
+#' @param idx: integer, vector of indices to edges to colour
+#' @param col: string, colour specification
+#' @export
+draw.clade <- function(obj, idx, col='red', ...) { 
+  e <- obj$edges[idx, ]
   segments(e$x0, e$y0, e$x1, e$y1, col, ...)
 
   if (obj$layout == 'rectangular') {
@@ -1129,3 +1142,25 @@ draw.clade <- function(obj, tips, col='red', is.mono=TRUE, max.tips=100, ...) {
   }
 }
 
+
+#' get.tips
+#' 
+#' A recursive function to retrieve a list of indices for all tips that 
+#' descend from a given node in the tree.
+#' 
+#' @param parent:  integer, index of internal node
+#' @param obj:  S3 object of class `phyloLayout`
+#' @param res:  integer, pass result vector to recursive calls
+#' @return an integer vector of row indices for tips in obj$nodes
+#' @export
+get.tips <- function(parent, obj, res=c()) {
+  children <- obj$edges$child[obj$edges$parent==parent]
+  for (child in children) {
+    if (L$nodes$n.tips[child]==0) {
+      res <- c(res, child)
+    } else {
+      res <- get.tips(child, obj, res)
+    }
+  }
+  return(res)
+}
