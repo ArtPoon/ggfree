@@ -93,7 +93,12 @@ slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA,
     if (type=='t') {
       lines(x=c(1,2), y=r, type='b', cex=0, col=col, ...)
       text(x=c(1,2), y=r, labels = r, col=col, cex=cex.text)
-    } else{
+    } 
+    else if (type=='x') {
+      lines(x=c(1,2), y=r, type='l', col=col, ...)
+      
+    }
+    else {
       lines(x=c(1,2), y=r, type=type, col=col, ...)
     }
   })
