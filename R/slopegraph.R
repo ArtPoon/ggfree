@@ -25,7 +25,7 @@
 #' @param y: numeric vector of values to plot on the right
 #' @param type: 'b' displays both points and lines; 'l' displays lines only.
 #'              't' replaces points with numeric values, as per Tufte.
-#'              'x' draws lines and box-and-whiskers
+#' @param box: if TRUE, add box-and-whisker plots in shim regions
 #' @param names.arg: optional names for labeling the x-axis
 #' @param xlab: label for x-axis, as in generic \code{plot()}. Defaults to 'Groups'.
 #' @param ylab: label for y-axis, as in generic \code{plot()}. Defaults to \code{NA}.
@@ -33,17 +33,18 @@
 #' @param pal: vector of two colours for annotating slopes down and up, respectively.
 #' @param shim: width of horizontal padding to left and right of plot
 #' @param cex.text: character expansion for text
+#' @param pt.cex:  character expansion for points, if type=='b'
 #' @param ...: additional arguments to pass to \code{plot()}
 #' 
 #' @export
-slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA,
+slopegraph <- function(x, y=NA, type='b', box=FALSE, names.arg=NA, xlab=NA, ylab=NA,
                        colorize=F, pal=c('firebrick', 'steelblue'), shim=0.5, 
-                       cex.text=0.8, ...) {
+                       cex.text=0.8, pt.cex=1, ...) {
   # save user's current mar settings
   last.mar <- par()$mar
   
   # check if 'x' holds a matrix or dataframe
-  if (is.na(y)) {
+  if (all(is.na(y))) {
     if (is.element(class(x), c('data.frame', 'matrix')) && ncol(x)==2) {
       if (all(is.na(names.arg))) {
         names.arg <- names(x)
@@ -70,7 +71,7 @@ slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA,
   
   # prepare plot region
   #par(mar=c(5,5,2,5))
-  plot(NA, xlim=c(ifelse(type=='t', 1-shim, 0.9), 2+shim), 
+  plot(NA, xlim=c(1-shim, 2+shim), 
        ylim=range(c(x, y)), 
        xaxt='n', yaxt=ifelse(type=='t', 'n', 's'), bty='n', 
        xlab=xlab, ylab=ylab, ...)
@@ -91,17 +92,45 @@ slopegraph <- function(x, y=NA, type='b', names.arg=NA, xlab=NA, ylab=NA,
   . <- apply(cbind(x, y), 1, function(r) {
     col <- ifelse(colorize, ifelse(diff(r)>0, pal[1], pal[2]), 'black')
     if (type=='t') {
+      # 'b' leaves space for labels
       lines(x=c(1,2), y=r, type='b', cex=0, col=col, ...)
       text(x=c(1,2), y=r, labels = r, col=col, cex=cex.text)
     } 
+<<<<<<< HEAD
     else if (type=='x') {
       lines(x=c(1,2), y=r, type='l', col=col, ...)
       
     }
     else {
       lines(x=c(1,2), y=r, type=type, col=col, ...)
+=======
+    else {
+      lines(x=c(1,2), y=r, type=type, col=col, cex=pt.cex, ...)
+>>>>>>> a0fc610303afabe2c59c5a62f0de34668a6f4be1
     }
   })
+  
+  if (box) {
+    
+    x.box <- boxplot(x, plot=F)
+    # median
+    segments(x0=1-shim*0.75, x1=1-shim*0.25, y0=x.box$stats[3,1], lwd=3, lend=1)
+    # whiskers
+    segments(x0=1-shim*0.66, x1=1-shim*0.33, y0=x.box$stats[c(1, 5), 1])
+    # IQR
+    rect(xleft=1-shim*0.75, xright=1-shim*0.25, 
+         ybot=x.box$stats[2,1], ytop=x.box$stats[4,1])
+    segments(x0=1-shim*0.5, y0=x.box$stats[1,1], y1=x.box$stats[2,1], lty=2)
+    segments(x0=1-shim*0.5, y0=x.box$stats[4,1], y1=x.box$stats[5,1], lty=2)
+    
+    y.box <- boxplot(y, plot=F)
+    segments(x0=2+shim*0.75, x1=2+shim*0.25, y0=y.box$stats[3,1], lwd=3, lend=1)
+    segments(x0=2+shim*0.66, x1=2+shim*0.33, y0=y.box$stats[c(1, 5), 1])
+    rect(xleft=2+shim*0.75, xright=2+shim*0.25, 
+         ybot=y.box$stats[2,1], ytop=y.box$stats[4,1])
+    segments(x0=2+shim*0.5, y0=y.box$stats[1,1], y1=y.box$stats[2,1], lty=2)
+    segments(x0=2+shim*0.5, y0=y.box$stats[4,1], y1=y.box$stats[5,1], lty=2)    
+  }
   
   # restore user's previous mar settings
   par(mar=last.mar)
