@@ -783,6 +783,8 @@ points.phyloLayout <- function(obj, type='b', offset=0, ...) {
 #' @param x0:  (optional) override default horizontal placement of bar
 #' @param y0:  (optional) override default vertical placement of bar.
 #'        Note both x and y need to be specified to override the default.
+#' @param y.off:  offset for label, defaults to 1
+#' @param cex.lab:  scale factor for label
 #' @param ...:  additional graphical parameters to pass to `segments`, 
 #'        such as `cex`, `col` and `lwd`.
 #' 
@@ -793,7 +795,8 @@ points.phyloLayout <- function(obj, type='b', offset=0, ...) {
 #' plot(Y)
 #' add.scalebar(Y, len=1)
 #' @export
-add.scalebar <- function(obj, len=1, x0=NA, y0=NA, lwd=2, ...) {
+add.scalebar <- function(obj, len=1, x0=NA, y0=NA, lwd=2, y.off=1, cex.lab=1, 
+                         ...) {
   if (is.na(x0) | is.na(y0)) {
     # use default location
     mid.pt <- mean(range(obj$nodes$x))
@@ -805,7 +808,7 @@ add.scalebar <- function(obj, len=1, x0=NA, y0=NA, lwd=2, ...) {
   }
   suppressWarnings({
     segments(x0, y0, x1, lwd=lwd, ...)
-    text(x=mean(c(x0, x1)), y=y0-.7, label=len, ...)
+    text(x=mean(c(x0, x1)), y=y0-y.off, label=len, cex=cex.lab, ...)
   })
 }
 
@@ -1128,4 +1131,3 @@ draw.clade <- function(obj, tips, col='red', is.mono=TRUE, max.tips=100, ...) {
     }
   }
 }
-
