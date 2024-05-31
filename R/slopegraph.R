@@ -96,17 +96,11 @@ slopegraph <- function(x, y=NA, type='b', box=FALSE, names.arg=NA, xlab=NA, ylab
       lines(x=c(1,2), y=r, type='b', cex=0, col=col, ...)
       text(x=c(1,2), y=r, labels = r, col=col, cex=cex.text)
     } 
-<<<<<<< HEAD
     else if (type=='x') {
       lines(x=c(1,2), y=r, type='l', col=col, ...)
-      
     }
     else {
-      lines(x=c(1,2), y=r, type=type, col=col, ...)
-=======
-    else {
       lines(x=c(1,2), y=r, type=type, col=col, cex=pt.cex, ...)
->>>>>>> a0fc610303afabe2c59c5a62f0de34668a6f4be1
     }
   })
   
