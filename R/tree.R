@@ -784,6 +784,7 @@ points.phyloLayout <- function(obj, type='b', offset=0, ...) {
 #' @param y0:  (optional) override default vertical placement of bar.
 #'        Note both x and y need to be specified to override the default.
 #' @param dy:  (optional) override default spacing between bar and label.
+#' @param cex.lab:  scale factor for label
 #' @param ...:  additional graphical parameters to pass to `segments`, 
 #'        such as `cex`, `col` and `lwd`.
 #' 
@@ -794,7 +795,7 @@ points.phyloLayout <- function(obj, type='b', offset=0, ...) {
 #' plot(Y)
 #' add.scalebar(Y, len=1)
 #' @export
-add.scalebar <- function(obj, len=1, x0=NA, y0=NA, dy=NA, lwd=2, ...) {
+add.scalebar <- function(obj, len=1, x0=NA, y0=NA, dy=NA, lwd=2, cex.lab=1, ...) {
   if (is.na(x0)) {
     mid.pt <- mean(range(obj$nodes$x))
     x0 <- mid.pt - len/2  # use default location
@@ -812,7 +813,7 @@ add.scalebar <- function(obj, len=1, x0=NA, y0=NA, dy=NA, lwd=2, ...) {
   }
   suppressWarnings({
     segments(x0, y0, x1, lwd=lwd, xpd=NA, ...)
-    text(x=mean(c(x0, x1)), y=y0-dy, label=len, xpd=NA, ...)
+    text(x=mean(c(x0, x1)), y=y0-dy, label=len, cex=cex.lab, xpd=NA, ...)
   })
 }
 
@@ -1024,35 +1025,53 @@ image.phyloLayout <- function(obj, z, xlim=NA, col=NA, border='white', xaxt='y',
 #' draw.branch
 #'
 #' Locate the common ancestor given a vector of tip labels and 
-#' draw the corresponding branch for a given tree layout.
-#' @param layout:  an S3 object of class `phyloLayout`
+#' draw the corresponding branch or subset tree (sst=TRUE) for a 
+#' given tree layout.
+#' @param obj:  an S3 object of class `phyloLayout`
 #' @param tips:  a character vector of tip labels
 #' @param col:  color for drawing branch, defaults to red
 #' @param ...:  additional arguments passed to `segments`
 #' 
 #' @export
-draw.branch <- function(layout, tips, col='red', ...) {
-  unmatched <- !is.element(tips, layout$nodes$label)
+draw.branch <- function(obj, tips, col='red', sst=FALSE, ...) {
+  unmatched <- !is.element(tips, obj$nodes$label)
   if (any(unmatched)) {
     stop("Error: not all tip labels found in tree layout:")
     cat(tips[!unmatched])
   }
   
   # find most recent common ancestor
-  idx <- sapply(tips, function(l) which(layout$nodes$label==l))
-  traj <- lapply(idx, function(i) .climb.up.tree(i, edges))
-  common <- Reduce(intersect, traj)
-  if (length(common) < 1) {
-    stop("Error: Failed to locate common ancestor of tips ", tips)
-  }
-  mrca <- common[1]
+  idx <- sapply(tips, function(l) which(obj$nodes$label==l))
+  traj <- lapply(idx, function(i) .climb.up.tree(i, obj$edges))
   
-  if (!is.element(mrca, layout$edges$child)) {
-    warning("draw.branch() selected root branch, no action taken.")
+  if (sst) {  # subset tree
+    # draw tips
+    for (node in idx) {
+      e <- obj$edges[obj$edges$child==node, ]
+      segments(e$x0, e$y0, e$x1, e$y1, col, ...)      
+    }
+    # draw internal branches
+    common <- unique(unlist(traj))
+    for (node in common) {
+      e <- obj$edges[obj$edges$child==node, ]
+      segments(e$x0, e$y0, e$x1, e$y1, col, ...)
+    }
   } else {
-    e <- layout$edges[layout$edges$child==mrca, ]
-    segments(e$x0, e$y0, e$x1, e$y1, col, ...)
+    # draw only the branch associated with the MRCA
+    common <- Reduce(intersect, traj)
+    if (length(common) < 1) {
+      stop("Error: Failed to locate common ancestor of tips ", tips)
+    }
+    mrca <- common[1]
+    
+    if (!is.element(mrca, obj$edges$child)) {
+      warning("draw.branch() selected root branch, no action taken.")
+    } else {
+      e <- obj$edges[obj$edges$child==mrca, ]
+      segments(e$x0, e$y0, e$x1, e$y1, col, ...)
+    }    
   }
+
 }
 
 
@@ -1168,3 +1187,4 @@ get.tips <- function(parent, obj, res=c()) {
   }
   return(res)
 }
+
