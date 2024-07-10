@@ -795,17 +795,21 @@ points.phyloLayout <- function(obj, type='b', offset=0, ...) {
 #' add.scalebar(Y, len=1)
 #' @export
 add.scalebar <- function(obj, len=1, x0=NA, y0=NA, dy=NA, lwd=2, ...) {
-  if (is.na(x0) | is.na(y0)) {
-    # use default location
+  if (is.na(x0)) {
     mid.pt <- mean(range(obj$nodes$x))
-    x0 <- mid.pt - len/2
+    x0 <- mid.pt - len/2  # use default location
     x1 <- mid.pt + len/2
-    #y0 <- min(obj$nodes$y) - 1
-    y0 <- min(obj$nodes$y) - dy
   } else {
     x1 <- x0+len
   }
-  if (is.na(dy)) dy <- 0.01*diff(range(obj$nodes$y))
+
+  if (is.na(dy)) {
+    dy <- 0.01*diff(range(obj$nodes$y))
+  }
+  
+  if (is.na(y0)) {
+    y0 <- min(obj$nodes$y) - dy
+  }
   suppressWarnings({
     segments(x0, y0, x1, lwd=lwd, xpd=NA, ...)
     text(x=mean(c(x0, x1)), y=y0-dy, label=len, xpd=NA, ...)

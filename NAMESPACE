@@ -28,3 +28,6 @@ export(slopegraph)
 export(stackplot)
 export(tree.layout)
 export(unroot)
+export(get.tips)
+export(find.clade)
+
