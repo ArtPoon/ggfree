@@ -1179,7 +1179,7 @@ draw.clade <- function(obj, idx, col='red', ...) {
 get.tips <- function(parent, obj, res=c()) {
   children <- obj$edges$child[obj$edges$parent==parent]
   for (child in children) {
-    if (L$nodes$n.tips[child]==0) {
+    if (obj$nodes$n.tips[child]==0) {
       res <- c(res, child)
     } else {
       res <- get.tips(child, obj, res)
