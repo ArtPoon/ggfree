@@ -214,10 +214,11 @@ rotate.layout <- function(layout, angle) {
 #' @param offset:  distance to draw labels relative to axis, scaled to 
 #'                 dimensions of plot region.
 #' @param cex:  character expansion factor for axis labels
+#' @param col:  colour for axis labels
 #' @param ...:  other arguments passed to axis(), *e.g.*, `line` or `col`
 #' 
 #' @export
-axis.srt <- function(side, at, labels, srt, offset=0.05, cex=1, ...) {
+axis.srt <- function(side, at, labels, srt, offset=0.05, cex=1, col='black', ...) {
   # draw the usual axis without labels
   axis(side=side, at=at, labels=FALSE, ...)
   
@@ -228,7 +229,7 @@ axis.srt <- function(side, at, labels, srt, offset=0.05, cex=1, ...) {
   
   if (side %% 2 == 1) {
     # horizontal axis
-    text(x=at, y=baseline, labels=labels, cex=cex, 
+    text(x=at, y=baseline, labels=labels, cex=cex, col=col,
          xpd=NA, srt=srt, adj=ifelse(srt==0, 0.5, 1))
   } else {
     # vertical axis

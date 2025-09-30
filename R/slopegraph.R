@@ -31,6 +31,9 @@
 #' @param ylab: label for y-axis, as in generic \code{plot()}. Defaults to \code{NA}.
 #' @param colorize: use line colours to emphasize slope
 #' @param pal: vector of two colours for annotating slopes down and up, respectively.
+#' @param col: character, colours for drawing lines, points and labels (default: 'black').  
+#'             Override if colorize is TRUE.
+#' @param lty:  numeric, scalar or vector of values for line type (default: 1)
 #' @param shim: width of horizontal padding to left and right of plot
 #' @param cex.text: character expansion for text
 #' @param pt.cex:  character expansion for points, if type=='b'
@@ -38,8 +41,8 @@
 #' 
 #' @export
 slopegraph <- function(x, y=NA, type='b', box=FALSE, names.arg=NA, xlab=NA, ylab=NA,
-                       colorize=F, pal=c('firebrick', 'steelblue'), shim=0.5, 
-                       cex.text=0.8, pt.cex=1, ...) {
+                       colorize=F, pal=c('firebrick', 'steelblue'), col='black', lty=1,
+                       shim=0.5, cex.text=0.8, pt.cex=1, ylim=NULL, xaxt='s', ...) {
   # save user's current mar settings
   last.mar <- par()$mar
   
@@ -71,12 +74,15 @@ slopegraph <- function(x, y=NA, type='b', box=FALSE, names.arg=NA, xlab=NA, ylab
   
   # prepare plot region
   #par(mar=c(5,5,2,5))
+  if (is.null(ylim)) {
+    ylim <- range(c(x, y))
+  }
   plot(NA, xlim=c(1-shim, 2+shim), 
-       ylim=range(c(x, y)), 
-       xaxt='n', yaxt=ifelse(type=='t', 'n', 's'), bty='n', 
+       ylim=ylim, xaxt='n', yaxt=ifelse(type=='t', 'n', 's'), bty='n', 
        xlab=xlab, ylab=ylab, ...)
-  
-  axis(side=1, at=c(1,2), labels=names.arg)
+  if (xaxt != 'n') {
+    axis(side=1, at=c(1,2), labels=names.arg)  
+  }
   
   # labels for slopes
   if (!is.null(names(x))) {
@@ -89,20 +95,32 @@ slopegraph <- function(x, y=NA, type='b', box=FALSE, names.arg=NA, xlab=NA, ylab
   }
   
   # draw slopes
-  . <- apply(cbind(x, y), 1, function(r) {
-    col <- ifelse(colorize, ifelse(diff(r)>0, pal[1], pal[2]), 'black')
-    if (type=='t') {
-      # 'b' leaves space for labels
-      lines(x=c(1,2), y=r, type='b', cex=0, col=col, ...)
-      text(x=c(1,2), y=r, labels = r, col=col, cex=cex.text)
-    } 
-    else if (type=='x') {
-      lines(x=c(1,2), y=r, type='l', col=col, ...)
-    }
-    else {
-      lines(x=c(1,2), y=r, type=type, col=col, cex=pt.cex, ...)
-    }
-  })
+  n <- length(x)
+  segments(x0=rep(1,n), x1=rep(2,n), y0=x, y1=y, col=col, lty=lty)
+  if (type=='t') {
+    points(x=rep(c(1,2), each=n), y=c(x, y), pch=19, col='white', cex=2)
+    text(x=rep(c(1,2), each=n), y=c(x, y), labels=c(x, y), col=col, cex=cex.text)
+  }
+  
+  if (FALSE) {
+    . <- apply(cbind(x, y), 1, function(r) {
+      #if (colorize) {
+      #  col <- ifelse(diff(r)>0, pal[1], pal[2])  # override col
+      #}
+      if (type=='t') {
+        # 'b' leaves space for labels
+        #lines(x=c(1,2), y=r, type='b', cex=0, col=col, ...)
+        text(x=c(1,2), y=r, labels = r, col=col, cex=cex.text)
+      } 
+      else if (type=='x') {
+        lines(x=c(1,2), y=r, type='l', col=col, ...)
+      }
+      else {
+        lines(x=c(1,2), y=r, type=type, col=col, cex=pt.cex, ...)
+      }
+    })    
+  }
+
   
   if (box) {
     
