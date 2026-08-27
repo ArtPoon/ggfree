@@ -128,6 +128,7 @@ gg.rainbow <- function(n, c=100, l=65, alpha=1) {
 #' @param r0: radius to inner arc
 #' @param r1: radius to outer arc (optional, draw line if omitted)
 #' @param n: number of points to interpolate curves
+#' @param ...: arguments passed to polygon(), e.g., border
 #' 
 #' @export
 draw.arc <- function(x, y, theta0, theta1, r0, r1=NA, n=64, ...) {

@@ -91,7 +91,7 @@ sunburst <- function(x) {
 #' 
 #' A polar area diagram is a circular plot where the circle is partitioned by 
 #' radii at equal angles, and the areas of the resulting sections are rescaled in 
-#' proportion to the respective frequencies.  The origin of the polar
+#' proportion to the respective frequencies.
 #' 
 #' @examples
 #' require(RColorBrewer)
@@ -114,6 +114,9 @@ sunburst <- function(x) {
 #' 
 #' 
 #' @param obj: a numeric vector, matrix or table of frequency data
+#' @param x: location of centre with respect to horizontal axis.  Note the plot 
+#'           region is a (-1,+1) square.  Defaults to 0.
+#' @param y: location of centre with respect to vertical axis
 #' @param r: radius for inner circle, defaults to 0
 #' @param theta: rotation offset for plot in radians, defaults to pi/2
 #' @param space: a numeric vector on interval [0,1).  Values are reused as
@@ -206,5 +209,73 @@ polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, space=0, col=NA,
 }
 
 
-
-
+#' cidariplot
+#' 
+#' A modification of the polar area diagram so that sectors have variable 
+#' widths to make it easier to visualize smaller counts.  Named after the 
+#' family Cidaridae (pencil urchins).
+#' 
+#' @param obj:  integer, vector of non-negative integers
+#' @param x:  numeric, horizontal position of centre
+#' @param y:  numeric, vertical position of centre
+#' @param r0:  numeric, radius of inner circle (default: 0)
+#' @param r1:  numeric, radius of outer circle (default: 1)
+#' 
+#' @examples
+#' obj <- c(16, 4, 1, 19, 15, 138, 3, 7, 0, 9, 51, 14)
+#' cidariplot(obj, r0=0.2, limit=10)
+#' 
+#' @export
+cidariplot <- function(obj, x=0, y=0, r0=0, r1=1, limit=5, max.val=NA,
+                       col=NA, border=NA, add=FALSE) {
+  if (is.data.frame(obj) && nrow(obj)==1) {
+    obj <- unlist(obj)
+  }
+  if (!is.numeric(obj) || !is.vector(obj)) {
+    stop("obj must be a numeric vector")
+  }
+  
+  if (!add) {
+    # create new plot region
+    par(mar=rep(0, 4))
+    plot(NA, xlim=c(-1, 1), ylim=c(-1, 1), 
+         bty='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA)  
+  }
+  
+  if (is.na(max.val)) {
+    max.val <- max(obj)
+  }
+  
+  n.sect <- length(obj)
+  
+  # generate color palette
+  if (is.na(col)) {
+    col <- gg.rainbow(n.sect, l=50)
+  }
+  
+  h <- seq(0, 2*pi, length.out=n.sect+1)  # angles of sector boundaries
+  dh0 <- diff(h)[1]  # arc length (radians)
+  h.mids <- (h+dh0/2)[1:n.sect]  # midpoints (radians)
+  
+  # determine the arc length of limit value
+  min.arc <- limit/max.val * dh0
+  
+  # determine radii for counts below limit
+  #dr <- sapply(1:limit, function(i) )
+  for (i in 1:length(obj)) {
+    val <- obj[i]
+    if (val <= 0) {
+      # do nothing
+    } else if (val <= limit) {
+      # draw spine
+      draw.arc(x, y, theta0=h.mids[i]-min.arc/2, theta1=h.mids[i]+min.arc/2,
+               r0=r0, r1=sqrt(r0^2 + val/(limit+1) * (r1^2 - r0^2)),
+               border=border, col=col[i])
+    } else {
+      # draw fan
+      half <- val/limit * min.arc / 2
+      draw.arc(x, y, theta0=h.mids[i]-half, theta1=h.mids[i]+half,
+               r0=r0, r1=r1, border=border, col=col[i])
+    }
+  }
+}
