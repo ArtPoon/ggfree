@@ -215,11 +215,27 @@ polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, space=0, col=NA,
 #' widths to make it easier to visualize smaller counts.  Named after the 
 #' family Cidaridae (pencil urchins).
 #' 
-#' @param obj:  integer, vector of non-negative integers
-#' @param x:  numeric, horizontal position of centre
-#' @param y:  numeric, vertical position of centre
-#' @param r0:  numeric, radius of inner circle (default: 0)
-#' @param r1:  numeric, radius of outer circle (default: 1)
+#' @param obj: vector of non-negative numeric values
+#' @param x: horizontal position of centre
+#' @param y: vertical position of centre
+#' @param r0: radius of inner circle (default: 0)
+#' @param r1: radius of outer circle (default: 1)
+#' @param limit: value below which sector is drawn with a fixed 
+#'               narrow arc length.  Increasing values are represented by 
+#'               lengthening this 'spine'. 
+#' @param max.val: the value represented by the area of the largest 
+#'                 possible sector; defaults to the maximum value in `obj`.
+#' @param col: colour for filling sector polygons (default: 
+#'             `'black'`).  If given a vector of multiple colours, they will
+#'             be recycled as needed.
+#' @param border: colour for drawing borders (default: `NA`, no 
+#'                borders drawn).
+#' @param add: if `TRUE` then add to current plot region
+#' @param legend: if `TRUE` then draw a legend indicating numerical 
+#'                values associated with different sector shapes.
+#' @param use.names:  if `TRUE` and `obj` is a named vector, then label sectors
+#'                    with respective names.  If given a character vector of 
+#'                    same length as `obj`, then those labels will be used.
 #' 
 #' @examples
 #' obj <- c(16, 4, 1, 19, 15, 138, 3, 7, 0, 9, 51, 14)
@@ -227,19 +243,22 @@ polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, space=0, col=NA,
 #' 
 #' @export
 cidariplot <- function(obj, x=0, y=0, r0=0, r1=1, limit=5, max.val=NA,
-                       col=NA, border=NA, add=FALSE) {
+                       col='black', border=NA, add=FALSE, legend=FALSE, ...) {
   if (is.data.frame(obj) && nrow(obj)==1) {
     obj <- unlist(obj)
   }
   if (!is.numeric(obj) || !is.vector(obj)) {
     stop("obj must be a numeric vector")
   }
+  if (any(obj<0)) {
+    stop("obj must contain non-negative numeric values")
+  }
   
   if (!add) {
     # create new plot region
     par(mar=rep(0, 4))
-    plot(NA, xlim=c(-1, 1), ylim=c(-1, 1), 
-         bty='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA)  
+    plot(NA, xlim=c(-1, 1), ylim=c(-1, 1), bty='n', xaxt='n', yaxt='n', 
+         xlab=NA, ylab=NA)  
   }
   
   if (is.na(max.val)) {
@@ -247,11 +266,6 @@ cidariplot <- function(obj, x=0, y=0, r0=0, r1=1, limit=5, max.val=NA,
   }
   
   n.sect <- length(obj)
-  
-  # generate color palette
-  if (is.na(col)) {
-    col <- gg.rainbow(n.sect, l=50)
-  }
   
   h <- seq(0, 2*pi, length.out=n.sect+1)  # angles of sector boundaries
   dh0 <- diff(h)[1]  # arc length (radians)
@@ -261,7 +275,6 @@ cidariplot <- function(obj, x=0, y=0, r0=0, r1=1, limit=5, max.val=NA,
   min.arc <- limit/max.val * dh0
   
   # determine radii for counts below limit
-  #dr <- sapply(1:limit, function(i) )
   for (i in 1:length(obj)) {
     val <- obj[i]
     if (val <= 0) {
@@ -270,12 +283,12 @@ cidariplot <- function(obj, x=0, y=0, r0=0, r1=1, limit=5, max.val=NA,
       # draw spine
       draw.arc(x, y, theta0=h.mids[i]-min.arc/2, theta1=h.mids[i]+min.arc/2,
                r0=r0, r1=sqrt(r0^2 + val/(limit+1) * (r1^2 - r0^2)),
-               border=border, col=col[i])
+               border=border, col=col[(i-1)%%length(col)+1], ...)
     } else {
       # draw fan
       half <- val/limit * min.arc / 2
       draw.arc(x, y, theta0=h.mids[i]-half, theta1=h.mids[i]+half,
-               r0=r0, r1=r1, border=border, col=col[i])
+               r0=r0, r1=r1, border=border, col=col[(i-1)%%length(col)+1], ...)
     }
   }
 }
