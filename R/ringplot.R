@@ -243,7 +243,8 @@ polarplot <- function(obj, x=0, y=0, r=0, theta=0.5*pi, space=0, col=NA,
 #' 
 #' @export
 cidariplot <- function(obj, x=0, y=0, r0=0, r1=1, limit=5, max.val=NA,
-                       col='black', border=NA, add=FALSE, legend=FALSE, ...) {
+                       col='black', border=NA, bg=NA, add=FALSE, legend=FALSE, 
+                       ...) {
   if (is.data.frame(obj) && nrow(obj)==1) {
     obj <- unlist(obj)
   }
@@ -271,6 +272,19 @@ cidariplot <- function(obj, x=0, y=0, r0=0, r1=1, limit=5, max.val=NA,
   dh0 <- diff(h)[1]  # arc length (radians)
   h.mids <- (h+dh0/2)[1:n.sect]  # midpoints (radians)
   
+  # draw background
+  if (any(is.na(bg))) {
+    bg <- rep(c('grey85', 'white'), length.out=n.sect)
+  } else if (length(bg) < n.sect) {
+    # recycle colours as needed
+    bg <- bg[((1:n.sect)-1)%%length(bg)+1]
+  }
+  for (i in 1:n.sect) {
+    draw.arc(x, y, theta0=h[i], theta1=h[i]+dh0, r0=r0, r1=r1, col=bg[i], 
+             border=NA)
+  }
+  draw.arc(x, y, theta0=0, theta1=2*pi, r0=r1, col='black')  # line
+  
   # determine the arc length of limit value
   min.arc <- limit/max.val * dh0
   
@@ -283,12 +297,90 @@ cidariplot <- function(obj, x=0, y=0, r0=0, r1=1, limit=5, max.val=NA,
       # draw spine
       draw.arc(x, y, theta0=h.mids[i]-min.arc/2, theta1=h.mids[i]+min.arc/2,
                r0=r0, r1=sqrt(r0^2 + val/(limit+1) * (r1^2 - r0^2)),
-               border=border, col=col[(i-1)%%length(col)+1], ...)
+               border=border, col=col, ...)
     } else {
       # draw fan
       half <- val/limit * min.arc / 2
       draw.arc(x, y, theta0=h.mids[i]-half, theta1=h.mids[i]+half,
-               r0=r0, r1=r1, border=border, col=col[(i-1)%%length(col)+1], ...)
+               r0=r0, r1=r1, border=border, col=col, ...)
+    }
+  }
+}
+
+
+
+
+#' katamari
+#' 
+#' A katamari plot is an alternative to a pie chart that is designed to make 
+#' it easier to compare the composition of different samples when counts are 
+#' highly variable among many types.  This function takes a data frame or table 
+#' where each row represents a sample, and each column represents a different 
+#' type.  A series of squares are arranged around a cyclic polygon.  Each 
+#' square represents a different type.  The area of the empty square is 
+#' proportional to the maximum count observed in any sample. For a given row, 
+#' the squares are 'filled' to reflect the count observed in the corresponding 
+#' sample.  The name is inspired by a video game series where 'katamari' 
+#' is derived from the Japanese word for 'clump'.
+#' 
+#' @param obj:  data frame or table with rows for observations and columns 
+#'              for variables
+#' @param row:  integer index for a row in the data frame to plot
+#' @param x:  horizontal coordinate for origin
+#' @param y:  vertical coordinate for origin
+#' @param add:  if TRUE, draw shapes to existing plot region
+katamari <- function(obj, row, x=0, y=0, r=0.5, border='grey50', lwd=0.5, add=FALSE) {
+  if (any(class(obj) == 'table')) {
+    obj <- as.data.frame.matrix(obj)
+  }
+  
+  max.counts <- apply(obj, 2, max)
+  e <- sqrt(max.counts)  # edge lengths
+  n <- ncol(obj)
+  if (max(e) > sum(e) - max(e)) {
+    stop("Cannot make closed convex polygon from these data: longest edge ",
+         "length exceeds sum of remaining edges.")
+  }
+  
+  # solve for the radius of the circle that circumscribes the vertices of a 
+  # polygon with edge lengths (e)
+  f <- function(x) {sum(2*asin(e/(2*x))) - 2*pi}  # error function
+  
+  # start with radius that just contains longest edge
+  r.lo <- max(e) / 2 * (1+1e-10)
+  r.hi <- r.lo
+  while (f(r.hi) > 0) { r.hi <- r.hi * 2 }  # radius too large to fit all edges
+  
+  r0 <- uniroot(f, c(r.lo, r.hi), tol=1e-12)$root  # solve for root
+  
+  theta <- 2*asin(e/(2*r0))  # angles of concylcic points
+  phi <- cumsum(c(0, theta))[1:n]  # cumulative angles
+  
+  v1 <- r*cbind(cos(phi)+x, sin(phi)+y)
+  v2 <- v1[c(2:n, 1), ]
+  dv <- v2-v1
+  L <- sqrt(rowSums(dv^2))
+  norms <- cbind(dv[,2], -dv[,1]) / L
+  v3 <- v2 + norms*L
+  v4 <- v1 + norms*L
+
+  # draw outline
+  if (!add) {
+    par(mar=rep(0, 4))
+    plot(NA, xlim=c(-1,1), ylim=c(-1,1))
+    for (i in 1:n) {
+      polygon(rbind(v1[i,], v2[i,], v3[i,], v4[i,], v1[i,]), border=border, lwd=lwd)
+    }    
+  }
+  
+  # fill for this observation
+  pL <- as.numeric(obj[row, ]) / max.counts * L
+  # TODO: draw as filled square instead of rectangle
+  v3 <- v2 + norms*pL
+  v4 <- v1 + norms*pL
+  for (i in 1:n) {
+    if (obj[row,i] > 0) {
+      polygon(rbind(v1[i,], v2[i,], v3[i,], v4[i,], v1[i,]), col='black', border=NA)  
     }
   }
 }
