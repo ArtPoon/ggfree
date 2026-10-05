@@ -594,12 +594,13 @@ lines.phyloLayout <- function(obj, col='grey50', shade=TRUE, ...) {
 #' Draw tip and/or internal node labels on the phylogenetic tree.
 #' 
 #' @param obj:  an S3 object of class `phyloLayout`
-#' @param label:  Specifies which set of nodes are labeled with text.
+#' @param type:  Specifies which set of nodes are labeled with text.
 #'   \itemize{
 #'     \item{'t'}{Tip labels only (default).}
 #'     \item{'i'}{Internal node labels only.}
 #'     \item{'b'}{Both tip and internal node labels.}
 #'   }
+#' @param label:  character, labels to use (default: node$label)
 #' @param align:  if TRUE, all tip labels are drawn at maximum value
 #' @param cex.lab:  character expansion factor for text
 #' @param offset:  float, additional spacing between tree tip and label; 
@@ -609,8 +610,8 @@ lines.phyloLayout <- function(obj, col='grey50', shade=TRUE, ...) {
 #' @param ...:  additional graphical parameters passed to `text`
 #' 
 #' @export
-text.phyloLayout <- function(obj, label='t', align=FALSE, cex.lab=1, offset=0, 
-                             col='black', ...) {
+text.phyloLayout <- function(obj, type='t', label=NA, align=FALSE, cex.lab=1, 
+                             offset=0, col='black', ...) {
   
   # filter node data frame
   tips <- obj$nodes[obj$nodes$n.tips==0, ]
